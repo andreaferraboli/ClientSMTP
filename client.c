@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <libsocket.h>
+#include <winsock2.h>
 
 #define SMTP_SERVER "smtp.gmail.com"
 #define SMTP_PORT 587
