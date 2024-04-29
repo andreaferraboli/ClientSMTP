@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
         WSACleanup();
         return 1;
     }
-    printf("Server reply: %s\n", server_reply);
+    printf("Server reply greetings: %s\n", server_reply);
 
     // Send HELO command
     const char *helo_command = "HELO localhost\r\n";
@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
         WSACleanup();
         return 1;
     }
-    printf("Server reply: %s\n", server_reply);
+    printf("Server reply helo: %s\n", server_reply);
     // Since we're just pinging, no data needs to be sent or received.
     // Send STARTTLS command (optional for secure connection)
     const char *starttls_command = "STARTTLS\r\n";
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]) {
         WSACleanup();
         return 1;
     }
-    printf("Server reply: %s\n", server_reply);
+    printf("Server reply STARTTLS: %s\n", server_reply);
     // Send AUTH LOGIN command
     const char *auth_login_command = "AUTH LOGIN\r\n";
     if (send(s, auth_login_command, strlen(auth_login_command), 0) == SOCKET_ERROR) {
@@ -136,10 +136,11 @@ int main(int argc, char *argv[]) {
         WSACleanup();
         return 1;
     }
-    printf("Server reply: %s\n", server_reply);
+    printf("Server reply AUTH LOGIN: %s\n", server_reply);
 
+    scanf("%s", server_reply);
     // Send username
-    char username[] = "andrew.ferro04@gmail.com";
+    char username[] = "tizzi70@gmail.com";
 
     // Allocate memory for the encoded string, considering potential errors
     char *encoded_username = strcat(base64(username), "\r\n");
@@ -156,7 +157,7 @@ int main(int argc, char *argv[]) {
     printf("Server: %s\n", server_reply);
 
     // Send Base64 encoded password (replace with your password and encoding logic)
-    char* password = "_HSbpF_5-mw9gaEkH3Ak0ww+R3EPi8"; // Replace with your actual password
+    char* password = "lrbh wgrk iywr gldv"; // Replace with your actual password
     char* encodedPassword = base64(password);
     const char* passwordCommand = strcat(encodedPassword, "\r\n"); // Append CRLF
     free(encodedPassword); // Free the allocated memory
