@@ -11,25 +11,25 @@ int main() {
   struct sockaddr_in server_addr;
   char buffer[1024];
 
-  // Creare un socket TCP
+  // Create a TCP socket
   sockfd = socket(AF_INET, SOCK_STREAM, 0);
   if (sockfd < 0) {
     perror("socket");
     exit(1);
   }
 
-  // Impostare l'indirizzo del server SMTP
+  // Set the SMTP server address
   server_addr.sin_family = AF_INET;
   server_addr.sin_port = htons(SMTP_PORT);
   server_addr.sin_addr.s_addr = inet_addr(SMTP_SERVER);
 
-  // Connettersi al server SMTP
+  // Connect to the SMTP server
   if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
     perror("connect");
     exit(1);
   }
 
-  // Ricevere il banner di benvenuto del server
+  // Receive the server's welcome banner
   int bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
   if (bytes_received < 0) {
     perror("recv");
@@ -37,11 +37,11 @@ int main() {
   }
   printf("%s\n", buffer);
 
-  // Inviare il comando EHLO
+  // Send the EHLO command
   strcpy(buffer, "EHLO\r\n");
   send(sockfd, buffer, strlen(buffer), 0);
 
-  // Ricevere la risposta EHLO
+  // Receive the EHLO response
   bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
   if (bytes_received < 0) {
     perror("recv");
@@ -49,11 +49,11 @@ int main() {
   }
   printf("%s\n", buffer);
 
-  // Inviare il comando AUTH LOGIN
+  // Send the AUTH LOGIN command
   strcpy(buffer, "AUTH LOGIN\r\n");
   send(sockfd, buffer, strlen(buffer), 0);
 
-  // Ricevere la richiesta di username
+  // Receive the username request
   bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
   if (bytes_received < 0) {
     perror("recv");
@@ -61,12 +61,18 @@ int main() {
   }
   printf("%s\n", buffer);
 
-  // Inviare il nome utente (base64 encoded)
-  char username_base64[1024];
-  // ... (Implementare la codifica base64 del nome utente)
-  send(sockfd, username_base64, strlen(username_base64), 0);
+  // Get username and password from user input (not secure)
+  char username[1024];
+  char password[1024];
+  printf("Enter your username: ");
+  scanf("%s", username);
+  printf("Enter your password: ");
+  scanf("%s", password);
 
-  // Ricevere la richiesta di password
+  // Send the username (plain text)
+  send(sockfd, username, strlen(username), 0);
+
+  // Receive the password request
   bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
   if (bytes_received < 0) {
     perror("recv");
@@ -74,12 +80,10 @@ int main() {
   }
   printf("%s\n", buffer);
 
-  // Inviare la password (base64 encoded)
-  char password_base64[1024];
-  // ... (Implementare la codifica base64 della password)
-  send(sockfd, password_base64, strlen(password_base64), 0);
+  // Send the password (plain text)
+  send(sockfd, password, strlen(password), 0);
 
-  // Ricevere la risposta di autenticazione
+  // Receive the authentication response
   bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
   if (bytes_received < 0) {
     perror("recv");
@@ -87,8 +91,22 @@ int main() {
   }
   printf("%s\n", buffer);
 
-  // ... (Implementare l'invio del messaggio email, QUIT e chiusura della socket)
+  // ... (Implement sending the email message, QUIT, and closing the socket)
 
+  // Send the QUIT command to terminate the connection
+  strcpy(buffer, "QUIT\r\n");
+  send(sockfd, buffer, strlen(buffer), 0);
+
+  // Receive the QUIT response
+  bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
+  if (bytes_received < 0) {
+    perror("recv");
+    exit(1);
+  }
+  printf("%s\n", buffer);
+
+  // Close the socket
   close(sockfd);
+
   return 0;
 }
