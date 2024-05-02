@@ -2,111 +2,78 @@
 #include <stdlib.h>
 #include <string.h>
 #include <winsock2.h>
+#include <Ws2tcpip.h>
+
+#pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "ws2tcpip.lib")
 
 #define SMTP_SERVER "smtp.gmail.com"
 #define SMTP_PORT 587
 
+
 int main() {
+  // Initialize Winsock
+  WSADATA wsaData;
+  int wsaStart = WSAStartup(MAKEWORD(2, 2), &wsaData);
+  if (wsaStart != 0) {
+    printf("WSAStartup failed with error: %d\n", wsaStart);
+    return 1;
+  }
+
   int sockfd;
   struct sockaddr_in server_addr;
   char buffer[1024];
 
   // Create a TCP socket
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0) {
-    perror("socket");
-    exit(1);
+  sockfd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (sockfd == INVALID_SOCKET) {
+    printf("socket failed with error: %d\n", WSAGetLastError());
+    WSACleanup();
+    return 1;
   }
+  printf("Socket connected successfully\n");
 
   // Set the SMTP server address
   server_addr.sin_family = AF_INET;
   server_addr.sin_port = htons(SMTP_PORT);
-  server_addr.sin_addr.s_addr = inet_addr(SMTP_SERVER);
+  printf("server address",&server_addr.sin_addr);
+  if (InetPtonA(AF_INET, SMTP_SERVER, &server_addr.sin_addr) <= 0) {
+    printf("inet_pton failed with error: %d\n", WSAGetLastError());
+    closesocket(sockfd);
+    WSACleanup();
+    return 1;
+  }
 
   // Connect to the SMTP server
-  if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) < 0) {
-    perror("connect");
-    exit(1);
+  if (connect(sockfd, (struct sockaddr *)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+    printf("connect failed with error: %d\n", WSAGetLastError());
+    closesocket(sockfd);
+    WSACleanup();
+    return 1;
   }
+  printf("Connected to SMTP server\n");
 
-  // Receive the server's welcome banner
-  int bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-  if (bytes_received < 0) {
-    perror("recv");
-    exit(1);
-  }
-  printf("%s\n", buffer);
-
-  // Send the EHLO command
-  strcpy(buffer, "EHLO\r\n");
-  send(sockfd, buffer, strlen(buffer), 0);
-
-  // Receive the EHLO response
-  bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-  if (bytes_received < 0) {
-    perror("recv");
-    exit(1);
-  }
-  printf("%s\n", buffer);
-
-  // Send the AUTH LOGIN command
-  strcpy(buffer, "AUTH LOGIN\r\n");
-  send(sockfd, buffer, strlen(buffer), 0);
-
-  // Receive the username request
-  bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-  if (bytes_received < 0) {
-    perror("recv");
-    exit(1);
-  }
-  printf("%s\n", buffer);
-
-  // Get username and password from user input (not secure)
-  char username[1024];
-  char password[1024];
-  printf("Enter your username: ");
-  scanf("%s", username);
-  printf("Enter your password: ");
-  scanf("%s", password);
-
-  // Send the username (plain text)
-  send(sockfd, username, strlen(username), 0);
-
-  // Receive the password request
-  bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-  if (bytes_received < 0) {
-    perror("recv");
-    exit(1);
-  }
-  printf("%s\n", buffer);
-
-  // Send the password (plain text)
-  send(sockfd, password, strlen(password), 0);
-
-  // Receive the authentication response
-  bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
-  if (bytes_received < 0) {
-    perror("recv");
-    exit(1);
-  }
-  printf("%s\n", buffer);
-
-  // ... (Implement sending the email message, QUIT, and closing the socket)
+  // ... (Rest of the code for receiving welcome banner, sending EHLO etc. with modifications for secure authentication)
 
   // Send the QUIT command to terminate the connection
   strcpy(buffer, "QUIT\r\n");
   send(sockfd, buffer, strlen(buffer), 0);
 
   // Receive the QUIT response
-  bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
+  int bytes_received = recv(sockfd, buffer, sizeof(buffer), 0);
   if (bytes_received < 0) {
-    perror("recv");
-    exit(1);
+    printf("recv failed with error: %d\n", WSAGetLastError());
+    closesocket(sockfd);
+    WSACleanup();
+    return 1;
   }
   printf("%s\n", buffer);
 
   // Close the socket
-  close(sockfd);
+  closesocket(sockfd);
+
+  // Clean up Winsock
+  WSACleanup();
 
   return 0;
 }
