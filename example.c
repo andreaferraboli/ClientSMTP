@@ -110,7 +110,7 @@ int main(int argc , char *argv[])
     printf("Server reply: %s\n", server_reply);
 
     // Send username
-    const char* encoded_username = "YW5kcmV3LmZlcnJvMDRAZ21haWwuY29t\r\n";
+    const char* encoded_username = "YW5kcmV3LmZlcnJvMDRAZ21haWwuY29tCg==\r\n";
     if (send(s, encoded_username, strlen(encoded_username), 0) == SOCKET_ERROR) {
         printf("Failed to send encoded username: %d\n", WSAGetLastError());
         closesocket(s);
