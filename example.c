@@ -1,87 +1,37 @@
 #include<stdio.h>
 #include<winsock2.h>
-//#include <openssl/bio.h>
-//#include <openssl/evp.h>
+
+#include <openssl/bio.h>
+#include <openssl/evp.h>
+#include <openssl/buffer.h>
 #pragma comment(lib, "ws2_32.lib") //Winsock Library
 
 #define FROM_EMAIL "andrew.ferro04@gmail.com"
 #define TO_EMAIL "tizzi70@gmail.com"
 #define SUBJECT "Test Email from C Program"
 #define BODY "This is a test email sent from a C program using SMTP."
-//char* base64(const char* input) {
-//    BIO *bio, *b64;
-//    long length;
-//    BUF_MEM *bufferPtr;
-//    b64 = BIO_new(BIO_f_base64());
-//    bio = BIO_new(BIO_s_mem());
-//    bio = BIO_push(b64, bio);
-//
-//    BIO_write(bio, input, strlen(input));
-//    BIO_flush(bio);
-//    length = BIO_get_mem_data(bio, &bufferPtr);
-//
-//    char* base64Output = (char*)malloc((length + 1) * sizeof(char));
-//    memcpy(base64Output, &bufferPtr, length);
-//    base64Output[length] = '\0';
-//
-//    BIO_free_all(bio);
-//
-//    return base64Output;
-//}
-static const char encoding_table[] = {
-        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H',
-        'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P',
-        'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X',
-        'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
-        'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n',
-        'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-        'w', 'x', 'y', 'z', '0', '1', '2', '3',
-        '4', '5', '6', '7', '8', '9', '+', '/'
-};
+char* base64(const char* input) {
+    BIO *bio, *b64;
+    BUF_MEM *bufferPtr;
+    char* buffer;
 
-size_t base64_encode(const unsigned char *input, size_t len, char *output) {
-    size_t encoded_len = 4 * ((len + 2) / 3); // Calculate the estimated output length
+    b64 = BIO_new(BIO_f_base64());
+    bio = BIO_new(BIO_s_mem());
+    BIO_push(b64, bio);
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL); // Ignore newlines - write everything in one line
+    BIO_write(b64, input, strlen(input));
+    BIO_flush(b64);
+    BIO_get_mem_ptr(b64, &bufferPtr);
+    BIO_set_close(b64, BIO_NOCLOSE);
+    BIO_free_all(b64);
 
-    // Handle potential memory allocation failures gracefully
-    if (output == NULL) {
-        return 0; // Indicate error (no output buffer provided)
-    }
-    output[encoded_len] = '\0'; // Ensure null termination
+    buffer = (char*)malloc((bufferPtr->length + 1)*sizeof(char));
+    memcpy(buffer, bufferPtr->data, bufferPtr->length);
+    buffer[bufferPtr->length] = '\0';
 
-    size_t i = 0, j = 0;
-    while (len--) {
-        unsigned char octet = input[i++];
-
-        // Encode the first 6 bits
-        output[j++] = encoding_table[octet >> 2];
-
-        if (len == 0) {
-            // Last byte: Pad with '=' if necessary
-            output[j++] = (octet & 3) << 4 ? encoding_table[(octet & 3) << 4] : '=';
-            output[j++] = '=';
-            break;
-        }
-
-        unsigned char octet2 = input[i++];
-
-        // Encode the next 6 bits
-        output[j++] = encoding_table[(octet & 3) << 4 | (octet2 >> 4)];
-
-        if (len == 0) {
-            // Last byte or two bytes: Pad with '=' if necessary
-            output[j++] = (octet2 & 15) << 2 ? encoding_table[(octet2 & 15) << 2] : '=';
-            break;
-        }
-
-        unsigned char octet3 = input[i++];
-
-        // Encode the last 6 bits
-        output[j++] = encoding_table[(octet2 & 15) << 2 | (octet3 >> 6)];
-        output[j++] = encoding_table[octet3 & 63];
-    }
-
-    return encoded_len; // Return the actual encoded length
+    return buffer;
 }
+
 
 int main(int argc, char *argv[]) {
     WSADATA wsa;
@@ -190,21 +140,15 @@ int main(int argc, char *argv[]) {
 
     // Send username
     char username[] = "andrew.ferro04@gmail.com";
-    size_t username_len = strlen(username);
 
     // Allocate memory for the encoded string, considering potential errors
-    char *encoded_username = malloc((username_len * 4 / 3) + 4);
-    if (encoded_username == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed\n");
-        return 1;
-    }
+    char *encoded_username = strcat(base64(username), "\r\n");
     printf("Encoded username: %s\n", encoded_username);
-    size_t encoded_len = base64_encode((unsigned char *)username, username_len, encoded_username);
     if (send(s, encoded_username, strlen(encoded_username), 0) == SOCKET_ERROR) {
         printf("Failed to send encoded username: %d\n", WSAGetLastError());
         closesocket(s);
         WSACleanup();
-        return 1;
+        return SOCKET_ERROR;
     }
     recv_size = recv(s, server_reply, sizeof(server_reply), 0);
     if (recv_size == SOCKET_ERROR) {
@@ -216,7 +160,8 @@ int main(int argc, char *argv[]) {
     printf("Server reply: %s\n", server_reply);
 
     // Send password
-    const char *encoded_password = "X0hTYnBGXzUtbXc5Z2FFa0gzQWswd3crUjNFUGk4\r\n";
+    char password[] = "_HSbpF_5-mw9gaEkH3Ak0ww+R3EPi8";
+    char *encoded_password = strcat(base64(password), "\r\n");
     if (send(s, encoded_password, strlen(encoded_password), 0) == SOCKET_ERROR) {
         printf("Failed to send encoded password: %d\n", WSAGetLastError());
         closesocket(s);
