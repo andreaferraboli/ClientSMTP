@@ -144,38 +144,62 @@ int main(int argc, char *argv[]) {
     // Allocate memory for the encoded string, considering potential errors
     char *encoded_username = strcat(base64(username), "\r\n");
     printf("Encoded username: %s\n", encoded_username);
-    if (send(s, encoded_username, strlen(encoded_username), 0) == SOCKET_ERROR) {
-        printf("Failed to send encoded username: %d\n", WSAGetLastError());
-        closesocket(s);
-        WSACleanup();
-        return SOCKET_ERROR;
-    }
-    recv_size = recv(s, server_reply, sizeof(server_reply), 0);
+    send(s, encoded_username, strlen(encoded_username), 0);
+    recv_size = recv(s, server_reply, sizeof(server_reply) - 1, 0);
     if (recv_size == SOCKET_ERROR) {
-        printf("Failed to receive reply after sending username: %d\n", WSAGetLastError());
+        printf("recv failed with error: %d\n", WSAGetLastError());
         closesocket(s);
         WSACleanup();
         return 1;
     }
-    printf("Server reply: %s\n", server_reply);
+    server_reply[recv_size] = '\0';
+    printf("Server: %s\n", server_reply);
 
-    // Send password
-    char password[] = "_HSbpF_5-mw9gaEkH3Ak0ww+R3EPi8";
-    char *encoded_password = strcat(base64(password), "\r\n");
-    if (send(s, encoded_password, strlen(encoded_password), 0) == SOCKET_ERROR) {
-        printf("Failed to send encoded password: %d\n", WSAGetLastError());
-        closesocket(s);
-        WSACleanup();
-        return 1;
-    }
-    recv_size = recv(s, server_reply, sizeof(server_reply), 0);
+    // Send Base64 encoded password (replace with your password and encoding logic)
+    char* password = "_HSbpF_5-mw9gaEkH3Ak0ww+R3EPi8"; // Replace with your actual password
+    char* encodedPassword = base64(password);
+    const char* passwordCommand = strcat(encodedPassword, "\r\n"); // Append CRLF
+    free(encodedPassword); // Free the allocated memory
+
+    send(s, passwordCommand, strlen(passwordCommand), 0);
+    recv_size = recv(s, server_reply, sizeof(server_reply) - 1, 0);
     if (recv_size == SOCKET_ERROR) {
-        printf("Failed to receive reply after sending password: %d\n", WSAGetLastError());
+        printf("recv failed with error: %d\n", WSAGetLastError());
         closesocket(s);
         WSACleanup();
         return 1;
     }
-    printf("Server reply: %s\n", server_reply);
+    server_reply[recv_size] = '\0';
+    printf("Server: %s\n", server_reply);
+
+    // Check authentication response
+    if (strstr(server_reply, "235 Authentication successful") == NULL) {
+        printf("Authentication failed\n");
+        closesocket(s);
+        WSACleanup();
+        return 1;
+    }
+
+    // Now you're authenticated and can send emails or perform other SMTP actions
+
+    printf("Authentication successful!\n");
+    // Send password
+//    char password[] = "_HSbpF_5-mw9gaEkH3Ak0ww+R3EPi8";
+//    char *encoded_password = strcat(base64(password), "\r\n");
+//    if (send(s, encoded_password, strlen(encoded_password), 0) == SOCKET_ERROR) {
+//        printf("Failed to send encoded password: %d\n", WSAGetLastError());
+//        closesocket(s);
+//        WSACleanup();
+//        return 1;
+//    }
+//    recv_size = recv(s, server_reply, sizeof(server_reply), 0);
+//    if (recv_size == SOCKET_ERROR) {
+//        printf("Failed to receive reply after sending password: %d\n", WSAGetLastError());
+//        closesocket(s);
+//        WSACleanup();
+//        return 1;
+//    }
+//    printf("Server reply: %s\n", server_reply);
     // Close the connection
     closesocket(s);
 
