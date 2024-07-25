@@ -4,7 +4,10 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
 #pragma comment(lib, "ws2_32.lib") //Winsock Library
+#define BUFFER_SIZE 1024
 
 #define FROM_EMAIL "andrew.ferro04@gmail.com"
 #define TO_EMAIL "tizzi70@gmail.com"
@@ -121,90 +124,258 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     printf("Server reply STARTTLS: %s\n", server_reply);
+    // Send HELO command again after STARTTLS
+    const char *ehlo_command = "EHLO localhost\r\n";
+
+    // Initialize OpenSSL
+    SSL_library_init();
+    SSL_load_error_strings();
+    const SSL_METHOD *method = TLS_client_method();
+    SSL_CTX *ctx = SSL_CTX_new(method);
+    SSL *ssl = SSL_new(ctx);
+    SSL_set_fd(ssl, s);
+
+    // Perform the TLS handshake
+    if (SSL_connect(ssl) != 1) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    printf("TLS handshake completed.\n");
+
+    // Send EHLO command again over TLS
+    if (SSL_write(ssl, ehlo_command, strlen(ehlo_command)) <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
+    printf("Server reply EHLO over TLS: %s\n", server_reply);
+
     // Send AUTH LOGIN command
     const char *auth_login_command = "AUTH LOGIN\r\n";
-    if (send(s, auth_login_command, strlen(auth_login_command), 0) == SOCKET_ERROR) {
-        printf("Failed to send AUTH LOGIN command: %d\n", WSAGetLastError());
+    if (SSL_write(ssl, auth_login_command, strlen(auth_login_command)) <= 0) {
+        ERR_print_errors_fp(stderr);
         closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
         WSACleanup();
         return 1;
     }
-    recv_size = recv(s, server_reply, sizeof(server_reply), 0);
-    if (recv_size == SOCKET_ERROR) {
-        printf("Failed to receive reply after AUTH LOGIN: %d\n", WSAGetLastError());
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
         closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
         WSACleanup();
         return 1;
     }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
     printf("Server reply AUTH LOGIN: %s\n", server_reply);
-
-    scanf("%s", server_reply);
-    // Send username
     char username[] = "tizzi70@gmail.com";
-
-    // Allocate memory for the encoded string, considering potential errors
-    char *encoded_username = strcat(base64(username), "\r\n");
-    printf("Encoded username: %s\n", encoded_username);
-    send(s, encoded_username, strlen(encoded_username), 0);
-    recv_size = recv(s, server_reply, sizeof(server_reply) - 1, 0);
-    if (recv_size == SOCKET_ERROR) {
-        printf("recv failed with error: %d\n", WSAGetLastError());
+    char *encoded_username = base64(username);
+    if (SSL_write(ssl, encoded_username, strlen(encoded_username)) <= 0) {
+        ERR_print_errors_fp(stderr);
+        free(encoded_username);
         closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
         WSACleanup();
         return 1;
     }
-    server_reply[recv_size] = '\0';
-    printf("Server: %s\n", server_reply);
-
-    // Send Base64 encoded password (replace with your password and encoding logic)
-    char* password = "lrbh wgrk iywr gldv"; // Replace with your actual password
-    char* encodedPassword = base64(password);
-    const char* passwordCommand = strcat(encodedPassword, "\r\n"); // Append CRLF
-    free(encodedPassword); // Free the allocated memory
-
-    send(s, passwordCommand, strlen(passwordCommand), 0);
-    recv_size = recv(s, server_reply, sizeof(server_reply) - 1, 0);
-    if (recv_size == SOCKET_ERROR) {
-        printf("recv failed with error: %d\n", WSAGetLastError());
+    if (SSL_write(ssl, "\r\n", 2) <= 0) {
+        ERR_print_errors_fp(stderr);
+        free(encoded_username);
         closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
         WSACleanup();
         return 1;
     }
-    server_reply[recv_size] = '\0';
-    printf("Server: %s\n", server_reply);
+    free(encoded_username);
 
-    // Check authentication response
-    if (strstr(server_reply, "235 Authentication successful") == NULL) {
-        printf("Authentication failed\n");
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
         closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
         WSACleanup();
         return 1;
     }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
+    printf("Server reply username: %s\n", server_reply);
 
-    // Now you're authenticated and can send emails or perform other SMTP actions
+    // Encode password in base64 and send
+    char password[] = "lrbh wgrk iywr gldv";
+    char *encoded_password = base64(password);
+    if (SSL_write(ssl, encoded_password, strlen(encoded_password)) <= 0) {
+        ERR_print_errors_fp(stderr);
+        free(encoded_password);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    if (SSL_write(ssl, "\r\n", 2) <= 0) {
+        ERR_print_errors_fp(stderr);
+        free(encoded_password);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    free(encoded_password);
 
-    printf("Authentication successful!\n");
-    // Send password
-//    char password[] = "_HSbpF_5-mw9gaEkH3Ak0ww+R3EPi8";
-//    char *encoded_password = strcat(base64(password), "\r\n");
-//    if (send(s, encoded_password, strlen(encoded_password), 0) == SOCKET_ERROR) {
-//        printf("Failed to send encoded password: %d\n", WSAGetLastError());
-//        closesocket(s);
-//        WSACleanup();
-//        return 1;
-//    }
-//    recv_size = recv(s, server_reply, sizeof(server_reply), 0);
-//    if (recv_size == SOCKET_ERROR) {
-//        printf("Failed to receive reply after sending password: %d\n", WSAGetLastError());
-//        closesocket(s);
-//        WSACleanup();
-//        return 1;
-//    }
-//    printf("Server reply: %s\n", server_reply);
-    // Close the connection
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
+    printf("Server reply password: %s\n", server_reply);
+// Send MAIL FROM command
+    const char *mail_from_command = "MAIL FROM:<tizzi70@gmail.com>\r\n";
+    if (SSL_write(ssl, mail_from_command, strlen(mail_from_command)) <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
+    printf("Server reply MAIL FROM: %s\n", server_reply);
+
+// Send RCPT TO command
+    const char *rcpt_to_command = "RCPT TO:<andrew.ferro04@gmail.com>\r\n";
+    if (SSL_write(ssl, rcpt_to_command, strlen(rcpt_to_command)) <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
+    printf("Server reply RCPT TO: %s\n", server_reply);
+
+// Send DATA command
+    const char *data_command = "DATA\r\n";
+    if (SSL_write(ssl, data_command, strlen(data_command)) <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
+    printf("Server reply DATA: %s\n", server_reply);
+
+// Send email headers and body
+    const char *email_headers_and_body =
+            "Subject: Test email\r\n"
+            "From: tizzi70@gmail.com\r\n"
+            "To: andrew.ferro04@gmail.com\r\n"
+            "\r\n"
+            "This is a test email sent from a C program.\r\n"
+            ".\r\n";
+
+    if (SSL_write(ssl, email_headers_and_body, strlen(email_headers_and_body)) <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
+    printf("Server reply end of DATA: %s\n", server_reply);
+
+// Send QUIT command to terminate the session
+    const char *quit_command = "QUIT\r\n";
+    if (SSL_write(ssl, quit_command, strlen(quit_command)) <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    recv_size = SSL_read(ssl, server_reply, BUFFER_SIZE);
+    if (recv_size <= 0) {
+        ERR_print_errors_fp(stderr);
+        closesocket(s);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        WSACleanup();
+        return 1;
+    }
+    server_reply[recv_size] = '\0'; // Null-terminate the response
+    printf("Server reply QUIT: %s\n", server_reply);
+
     closesocket(s);
-
-    // Clean up Winsock
+    SSL_free(ssl);
+    SSL_CTX_free(ctx);
     WSACleanup();
 }
 
