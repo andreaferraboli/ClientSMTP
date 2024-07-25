@@ -1,10 +1,46 @@
+/***************************************************************************
+ *                                  _   _ ____  _
+ *  Project                     ___| | | |  _ \| |
+ *                             / __| | | | |_) | |
+ *                            | (__| |_| |  _ <| |___
+ *                             \___|\___/|_| \_\_____|
+ *
+ * Copyright (C) Daniel Stenberg, <daniel@haxx.se>, et al.
+ *
+ * This software is licensed as described in the file COPYING, which
+ * you should have received as part of this distribution. The terms
+ * are also available at https://curl.se/docs/copyright.html.
+ *
+ * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+ * copies of the Software, and permit persons to whom the Software is
+ * furnished to do so, under the terms of the COPYING file.
+ *
+ * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+ * KIND, either express or implied.
+ *
+ * SPDX-License-Identifier: curl
+ *
+ ***************************************************************************/
+
+/* <DESC>
+ * Send email with SMTP
+ * </DESC>
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
 
+/*
+ * For an SMTP example using the multi interface please see smtp-multi.c.
+ */
 
-#define FROM_ADDR    "andrew.ferro04@gmail.com"
-#define TO_ADDR      "tizzi70@gmail.com"
+/* The libcurl options want plain addresses, the viewable headers in the mail
+ * can get a full name as well.
+ */
+#define FROM_ADDR    "<sender@example.org>"
+#define TO_ADDR      "<addressee@example.net>"
+#define CC_ADDR      "<info@example.org>"
 
 #define FROM_MAIL "Sender Person " FROM_ADDR
 #define TO_MAIL   "A Receiver " TO_ADDR
@@ -14,6 +50,7 @@ static const char *payload_text =
         "Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n"
         "To: " TO_MAIL "\r\n"
         "From: " FROM_MAIL "\r\n"
+        "Cc: " CC_MAIL "\r\n"
         "Message-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@"
         "rfcpedant.example.org>\r\n"
         "Subject: SMTP example message\r\n"
@@ -52,16 +89,15 @@ static size_t payload_source(char *ptr, size_t size, size_t nmemb, void *userp) 
 }
 
 int main(void) {
-    printf("inizio");
     CURL *curl;
     CURLcode res = CURLE_OK;
     struct curl_slist *recipients = NULL;
     struct upload_status upload_ctx = {0};
+
     curl = curl_easy_init();
-    printf("inizio");
     if (curl) {
         /* This is the URL for your mailserver */
-        curl_easy_setopt(curl, CURLOPT_URL, "smtp:/smpt.gmail.com:587");
+        curl_easy_setopt(curl, CURLOPT_URL, "smtp://mail.example.com");
 
         /* Note that this option is not strictly required, omitting it results in
          * libcurl sending the MAIL FROM command with empty sender data. All
@@ -76,6 +112,7 @@ int main(void) {
          * To: and Cc: addressees in the header, but they could be any kind of
          * recipient. */
         recipients = curl_slist_append(recipients, TO_ADDR);
+        recipients = curl_slist_append(recipients, CC_ADDR);
         curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
 
         /* We are using a callback function to specify the payload (the headers and

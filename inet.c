@@ -14,24 +14,24 @@
 
 // Function to convert an IP address string to binary form
 int convert_ip_address(int af, const char *src, char *dst) {
-  int result = InetPtonA(af, src, dst);
-  if (result <= 0) {
-    printf("Failed to convert IP address: %d\n", WSAGetLastError());
-    return -1; // Or handle error differently
-  }
-  return 1;
+    int result = InetPtonA(af, src, dst);
+    if (result <= 0) {
+        printf("Failed to convert IP address: %d\n", WSAGetLastError());
+        return -1; // Or handle error differently
+    }
+    return 1;
 }
 
 int main() {
-  // ... (Rest of your code)
+    // ... (Rest of your code)
 
-  char ip_address[] = "127.0.0.1"; // Example IPv4 address
-  int result = convert_ip_address(AF_INET, ip_address, "smtp.gmail.com");
-  if (result == 1) {
-    printf("Successfully converted IPv4 address\n");
-  } else {
-    printf("Error converting IPv4 address\n");
-  }
+    char ip_address[] = "127.0.0.1"; // Example IPv4 address
+    int result = convert_ip_address(AF_INET, ip_address, "smtp.gmail.com");
+    if (result == 1) {
+        printf("Successfully converted IPv4 address\n");
+    } else {
+        printf("Error converting IPv4 address\n");
+    }
 
-  // ...
+    // ...
 }

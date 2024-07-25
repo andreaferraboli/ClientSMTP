@@ -1,19 +1,59 @@
+/***************************************************************************
+ *                                  _   _ ____  _
+ *  Project                     ___| | | |  _ \| |
+ *                             / __| | | | |_) | |
+ *                            | (__| |_| |  _ <| |___
+ *                             \___|\___/|_| \_\_____|
+ *
+ * Copyright (C) Daniel Stenberg, <daniel@haxx.se>, et al.
+ *
+ * This software is licensed as described in the file COPYING, which
+ * you should have received as part of this distribution. The terms
+ * are also available at https://curl.se/docs/copyright.html.
+ *
+ * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+ * copies of the Software, and permit persons to whom the Software is
+ * furnished to do so, under the terms of the COPYING file.
+ *
+ * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+ * KIND, either express or implied.
+ *
+ * SPDX-License-Identifier: curl
+ *
+ ***************************************************************************/
+
+/* <DESC>
+ * Send email on behalf of another user with SMTP
+ * </DESC>
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <curl/curl.h>
 
+/*
+ * This is a simple example show how to send an email using libcurl's SMTP
+ * capabilities.
+ *
+ * Note that this example requires libcurl 7.66.0 or above.
+ */
 
-#define FROM_ADDR    "andrew.ferro04@gmail.com"
-#define TO_ADDR      "tizzi70@gmail.com"
+/* The libcurl options want plain addresses, the viewable headers in the mail
+ * can get a full name as well.
+ */
+#define FROM_ADDR    "<ursel@example.org>"
+#define SENDER_ADDR  "<kurt@example.org>"
+#define TO_ADDR      "<addressee@example.net>"
 
-#define FROM_MAIL "Sender Person " FROM_ADDR
-#define TO_MAIL   "A Receiver " TO_ADDR
-#define CC_MAIL   "John CC Smith " CC_ADDR
+#define FROM_MAIL    "Ursel " FROM_ADDR
+#define SENDER_MAIL  "Kurt " SENDER_ADDR
+#define TO_MAIL      "A Receiver " TO_ADDR
 
 static const char *payload_text =
         "Date: Mon, 29 Nov 2010 21:54:29 +1100\r\n"
         "To: " TO_MAIL "\r\n"
         "From: " FROM_MAIL "\r\n"
+        "Sender: " SENDER_MAIL "\r\n"
         "Message-ID: <dcd7cb36-11db-487a-9f3a-e652a9458efd@"
         "rfcpedant.example.org>\r\n"
         "Subject: SMTP example message\r\n"
@@ -52,16 +92,26 @@ static size_t payload_source(char *ptr, size_t size, size_t nmemb, void *userp) 
 }
 
 int main(void) {
-    printf("inizio");
     CURL *curl;
     CURLcode res = CURLE_OK;
     struct curl_slist *recipients = NULL;
     struct upload_status upload_ctx = {0};
+
     curl = curl_easy_init();
-    printf("inizio");
     if (curl) {
-        /* This is the URL for your mailserver */
-        curl_easy_setopt(curl, CURLOPT_URL, "smtp:/smpt.gmail.com:587");
+        /* This is the URL for your mailserver. In this example we connect to the
+           smtp-submission port as we require an authenticated connection. */
+        curl_easy_setopt(curl, CURLOPT_URL, "smtp://mail.example.com:587");
+
+        /* Set the username and password */
+        curl_easy_setopt(curl, CURLOPT_USERNAME, "kurt");
+        curl_easy_setopt(curl, CURLOPT_PASSWORD, "xipj3plmq");
+
+        /* Set the authorization identity (identity to act as) */
+        curl_easy_setopt(curl, CURLOPT_SASL_AUTHZID, "ursel");
+
+        /* Force PLAIN authentication */
+        curl_easy_setopt(curl, CURLOPT_LOGIN_OPTIONS, "AUTH=PLAIN");
 
         /* Note that this option is not strictly required, omitting it results in
          * libcurl sending the MAIL FROM command with empty sender data. All
@@ -72,9 +122,8 @@ int main(void) {
          */
         curl_easy_setopt(curl, CURLOPT_MAIL_FROM, FROM_ADDR);
 
-        /* Add two recipients, in this particular case they correspond to the
-         * To: and Cc: addressees in the header, but they could be any kind of
-         * recipient. */
+        /* Add a recipient, in this particular case it corresponds to the
+         * To: addressee in the header. */
         recipients = curl_slist_append(recipients, TO_ADDR);
         curl_easy_setopt(curl, CURLOPT_MAIL_RCPT, recipients);
 

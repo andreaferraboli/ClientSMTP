@@ -2,9 +2,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <Ws2tcpip.h>
+
 #define PORT 8080
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
     // Initialize Winsock
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -28,7 +29,7 @@ int main(int argc, char* argv[]) {
     server_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     // Connect to the server
-    if (connect(client_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
+    if (connect(client_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) == SOCKET_ERROR) {
         perror("connect failed");
         closesocket(client_fd);
         WSACleanup();
@@ -36,7 +37,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Send message to the server
-    char* hello = "Hello from client";
+    char *hello = "Hello from client";
     if (send(client_fd, hello, strlen(hello), 0) == SOCKET_ERROR) {
         perror("send failed");
         closesocket(client_fd);

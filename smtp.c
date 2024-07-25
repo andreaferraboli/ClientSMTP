@@ -15,12 +15,12 @@
  *
  */
 
-char * MailHeader(const char* from, const char* to, const char* subject, const char* mime_type, const char* charset) {
+char *MailHeader(const char *from, const char *to, const char *subject, const char *mime_type, const char *charset) {
 
     time_t now;
     time(&now);
     char *app_brand = "Codevlog Test APP";
-    char* mail_header = NULL;
+    char *mail_header = NULL;
     char date_buff[26];
     char Branding[6 + strlen(date_buff) + 2 + 10 + strlen(app_brand) + 1 + 1];
     char Sender[6 + strlen(from) + 1 + 1];
@@ -36,19 +36,21 @@ char * MailHeader(const char* from, const char* to, const char* subject, const c
     sprintf(Subject, "Subject: %s\r\n", subject);
     sprintf(mime_data, "MIME-Version: 1.0\r\nContent-type: %s; charset=%s\r\n\r\n", mime_type, charset);
 
-    int mail_header_length = strlen(Branding) + strlen(Sender) + strlen(Recip) + strlen(Subject) + strlen(mime_data) + 10;
+    int mail_header_length =
+            strlen(Branding) + strlen(Sender) + strlen(Recip) + strlen(Subject) + strlen(mime_data) + 10;
 
-    mail_header = (char*) malloc(mail_header_length * sizeof (char));
+    mail_header = (char *) malloc(mail_header_length * sizeof(char));
 
     memcpy(&mail_header[0], &Branding, strlen(Branding));
     memcpy(&mail_header[0 + strlen(Branding)], &Sender, strlen(Sender));
     memcpy(&mail_header[0 + strlen(Branding) + strlen(Sender)], &Recip, strlen(Recip));
     memcpy(&mail_header[0 + strlen(Branding) + strlen(Sender) + strlen(Recip)], &Subject, strlen(Subject));
-    memcpy(&mail_header[0 + strlen(Branding) + strlen(Sender) + strlen(Recip) + strlen(Subject)], &mime_data, strlen(mime_data));
+    memcpy(&mail_header[0 + strlen(Branding) + strlen(Sender) + strlen(Recip) + strlen(Subject)], &mime_data,
+           strlen(mime_data));
     return mail_header;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
     BIO *obj_bio = NULL;
     BIO *obj_out = NULL;
     const SSL_METHOD *method;
@@ -81,12 +83,13 @@ int main(int argc, char** argv) {
                 if (SSL_connect(ssl) != 1) {
                     BIO_printf(obj_out, "SLL session not created");
                 } else {
-                    char *header = MailHeader(MAIL_HEADER_FROM, MAIL_HEADER_TO, "Hello Its a test Mail from Codevlog", "text/plain", "US-ASCII");
+                    char *header = MailHeader(MAIL_HEADER_FROM, MAIL_HEADER_TO, "Hello Its a test Mail from Codevlog",
+                                              "text/plain", "US-ASCII");
 
                     int recvd = 0;
                     const char recv_buff[4768];
                     int sdsd;
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
 
                     char buff[1000];
@@ -94,27 +97,27 @@ int main(int argc, char** argv) {
                     strcat(buff, domain_name);
                     strcat(buff, "\r\n");
                     SSL_write(ssl, buff, strlen(buff));
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
 
                     char _cmd2[1000];
                     strcpy(_cmd2, "AUTH LOGIN\r\n");
                     int dfdf = SSL_write(ssl, _cmd2, strlen(_cmd2));
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
 
                     char _cmd3[1000];
                     Base64encode(&_cmd3, UID, strlen(UID));
                     strcat(_cmd3, "\r\n");
                     SSL_write(ssl, _cmd3, strlen(_cmd3));
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
 
                     char _cmd4[1000];
                     Base64encode(&_cmd4, PWD, strlen(PWD));
                     strcat(_cmd4, "\r\n");
                     SSL_write(ssl, _cmd4, strlen(_cmd4));
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
 
                     char _cmd5[1000];
@@ -123,36 +126,36 @@ int main(int argc, char** argv) {
                     strcat(_cmd5, "\r\n");
                     SSL_write(ssl, _cmd5, strlen(_cmd5));
                     char skip[1000];
-                    sdsd = SSL_read(ssl, skip, sizeof (skip));
+                    sdsd = SSL_read(ssl, skip, sizeof(skip));
 
                     char _cmd6[1000];
                     strcpy(_cmd6, "RCPT TO: ");
                     strcat(_cmd6, TO); //
                     strcat(_cmd6, "\r\n");
                     SSL_write(ssl, _cmd6, strlen(_cmd6));
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
 
                     char _cmd7[1000];
                     strcpy(_cmd7, "DATA\r\n");
                     SSL_write(ssl, _cmd7, strlen(_cmd7));
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
 
                     SSL_write(ssl, header, strlen(header));
                     char _cmd8[1000];
                     strcpy(_cmd8, "I own CodeVlog you tube channel");
-                    SSL_write(ssl, _cmd8, sizeof (_cmd8));
+                    SSL_write(ssl, _cmd8, sizeof(_cmd8));
                     char _cmd9[1000];
                     strcpy(_cmd9, "\r\n.\r\n.");
-                    SSL_write(ssl, _cmd9, sizeof (_cmd9));
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    SSL_write(ssl, _cmd9, sizeof(_cmd9));
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
 
                     char _cmd10[1000];
                     strcpy(_cmd10, "QUIT\r\n");
-                    SSL_write(ssl, _cmd10, sizeof (_cmd10));
-                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+                    SSL_write(ssl, _cmd10, sizeof(_cmd10));
+                    sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
                     recvd += sdsd;
                     printf("0)%s\r\n", &recv_buff);
                     free(header);
@@ -163,8 +166,8 @@ int main(int argc, char** argv) {
     return (EXIT_SUCCESS);
 }
 
-const char* GetIPAddress(const char* target_domain) {
-    const char* target_ip;
+const char *GetIPAddress(const char *target_domain) {
+    const char *target_ip;
     struct in_addr *host_address;
     struct hostent *raw_list = gethostbyname(target_domain);
     int i = 0;
@@ -175,14 +178,14 @@ const char* GetIPAddress(const char* target_domain) {
     return target_ip;
 }
 
-int ConnectToServer(const char* server_address) {
+int ConnectToServer(const char *server_address) {
     int socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
     struct sockaddr_in addr;
-    memset(&addr, 0, sizeof (addr));
+    memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(465);
     if (inet_pton(AF_INET, GetIPAddress(server_address), &addr.sin_addr) == 1) {
-        connect(socket_fd, &addr, sizeof (addr));
+        connect(socket_fd, &addr, sizeof(addr));
     }
     return socket_fd;
 }

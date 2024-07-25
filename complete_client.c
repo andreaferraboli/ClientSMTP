@@ -16,12 +16,14 @@
 #define Inbox_Size 20
 
 // attributes of an email message
-struct email{
+struct email {
     char subj[100], msg[1000], from[40], time[40];
 };
 typedef struct email email;
 
-void ssl_commands(char *UID,char *UPD,char *FROM,char *SUBJ,char *MSG,char *domain_name,char *domain,int port_num,int sel,email *emails,int *n_mes,char *RID_rep,char *opt,int *in,int del);
+void
+ssl_commands(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *domain_name, char *domain, int port_num,
+             int sel, email *emails, int *n_mes, char *RID_rep, char *opt, int *in, int del);
 
 // function used to find a specific word (delimiter) in a text (input) and split it for string manipulation
 char *multi_tok(char *input, char *delimiter) {
@@ -47,7 +49,7 @@ char *multi_tok(char *input, char *delimiter) {
 }
 
 // function that 'builds' the SMTP header of an email message
-char* MailHeader(const char *from, const char *to,const char *subject, const char *mime_type, const char* charset) {
+char *MailHeader(const char *from, const char *to, const char *subject, const char *mime_type, const char *charset) {
 
     time_t now;
     time(&now);
@@ -66,27 +68,29 @@ char* MailHeader(const char *from, const char *to,const char *subject, const cha
     sprintf(Sender, "From: %s\r\n", from);
     sprintf(Recip, "To: %s\r\n", to);
     sprintf(Subject, "Subject: %s\r\n", subject);
-    sprintf(mime_data, "MIME-Version: 1.0\r\nContent-type: %s; charset = %s\r\n\r\n", mime_type,charset);
+    sprintf(mime_data, "MIME-Version: 1.0\r\nContent-type: %s; charset = %s\r\n\r\n", mime_type, charset);
 
-    int mail_header_length = strlen(Branding) + strlen(Sender) + strlen(Recip) + strlen(Subject) + strlen(mime_data) + 10;
+    int mail_header_length =
+            strlen(Branding) + strlen(Sender) + strlen(Recip) + strlen(Subject) + strlen(mime_data) + 10;
 
-    mail_header = (char*) malloc(mail_header_length*sizeof(char));
+    mail_header = (char *) malloc(mail_header_length * sizeof(char));
 
     memcpy(&mail_header[0], &Branding, strlen(Branding));
     memcpy(&mail_header[0 + strlen(Branding)], &Sender, strlen(Sender));
     memcpy(&mail_header[0 + strlen(Branding) + strlen(Sender)], &Recip, strlen(Recip));
     memcpy(&mail_header[0 + strlen(Branding) + strlen(Sender) + strlen(Recip)], &Subject, strlen(Subject));
-    memcpy(&mail_header[0 + strlen(Branding) + strlen(Sender) + strlen(Recip) + strlen(Subject)], &mime_data,strlen(mime_data));
+    memcpy(&mail_header[0 + strlen(Branding) + strlen(Sender) + strlen(Recip) + strlen(Subject)], &mime_data,
+           strlen(mime_data));
     return mail_header;
 }
 
 // converts server name into IP address
-const char* GetIPAddress(const char* target_domain){
-    const char* target_ip;
+const char *GetIPAddress(const char *target_domain) {
+    const char *target_ip;
     struct in_addr *host_address;
     struct hostent *raw_list = gethostbyname(target_domain);
     int i = 0;
-    for (i; raw_list->h_addr_list[i] != 0; i++){
+    for (i; raw_list->h_addr_list[i] != 0; i++) {
         host_address = raw_list->h_addr_list[i];
         target_ip = inet_ntoa(*host_address);
     }
@@ -95,15 +99,15 @@ const char* GetIPAddress(const char* target_domain){
 }
 
 // creates a socket and initiates a connection between client and a target host
-int connectToServer(const char* server_address,int port_num){
+int connectToServer(const char *server_address, int port_num) {
 
-    int socket_fd = socket(AF_INET,SOCK_STREAM,IPPROTO_IP);
+    int socket_fd = socket(AF_INET, SOCK_STREAM, IPPROTO_IP);
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
     addr.sin_port = htons(port_num);
-    if(inet_pton(AF_INET, GetIPAddress(server_address), &addr.sin_addr) == 1) {
-        connect(socket_fd, (struct sockaddr *)&addr, sizeof(addr));
+    if (inet_pton(AF_INET, GetIPAddress(server_address), &addr.sin_addr) == 1) {
+        connect(socket_fd, (struct sockaddr *) &addr, sizeof(addr));
     }
 
     return socket_fd;
@@ -148,7 +152,7 @@ int Base64encode(char *encoded, const char *string, int len) {
 
 
 // first page of the application. Options are starting login process or quitting
-void *main_page(char *ch){
+void *main_page(char *ch) {
     printf("\n================ MAIN PAGE ================\n");
     printf("\n1. Login\n");
     printf("\n2. Quit\n");
@@ -158,20 +162,20 @@ void *main_page(char *ch){
     scanf("%s", ch);
 
     // in case of invalid entry
-    while(atoi(ch) != 1 && atoi(ch) != 2){
+    while (atoi(ch) != 1 && atoi(ch) != 2) {
         printf("The selection isn't valid. Please try again.\n\n");
         printf("Make your selection: ");
-        scanf("%s",ch);
+        scanf("%s", ch);
     }
 }
 
 // clears strings for reuse
-void clear_strings(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG){
-    memset(UID,0,sizeof(UID));
-    memset(UPD,0,sizeof(UPD));
-    memset(FROM,0,sizeof(FROM));
-    memset(SUBJ,0,sizeof(SUBJ));
-    memset(MSG,0,sizeof(MSG));
+void clear_strings(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG) {
+    memset(UID, 0, sizeof(UID));
+    memset(UPD, 0, sizeof(UPD));
+    memset(FROM, 0, sizeof(FROM));
+    memset(SUBJ, 0, sizeof(SUBJ));
+    memset(MSG, 0, sizeof(MSG));
 }
 
 // page where user enters credentials
@@ -213,7 +217,7 @@ void login_page(char *UID, char *ch) {
     scanf("%s", ch);
 
     // in case of invalid entry
-    while(atoi(ch) != 1 && atoi(ch) != 2 && atoi(ch) != 3){
+    while (atoi(ch) != 1 && atoi(ch) != 2 && atoi(ch) != 3) {
         printf("The selection isn't valid. Please try again.\n\n");
         printf("Make your selection: ");
         scanf("%s", ch);
@@ -226,7 +230,8 @@ void login_page(char *UID, char *ch) {
 
 // for header: FROM - sender, SUBJ - subject, MSG - message text, ssl - security layer process, RID_rep - reply recipient
 // opt - indicates whether it is a new message, reply or forward of an old message.
-void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *domain, SSL *ssl, char *RID_rep, char *opt){
+void
+send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *domain, SSL *ssl, char *RID_rep, char *opt) {
 
     // printf("\nSUBJ: %s\n", SUBJ);
     // printf("\nMSG: %s\n", MSG);
@@ -252,9 +257,9 @@ void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *d
     strcpy(buff, "EHLO smtp.gmail.com");
     strcat(buff, domain); // HEEEEEEEEEEEY is it necessary?
     strcat(buff, "\r\n");
-    SSL_write(ssl, buff,strlen(buff));
+    SSL_write(ssl, buff, strlen(buff));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     // security layer protocol process
     char buff3[1000];
@@ -262,34 +267,34 @@ void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *d
     strcat(buff3, "\r\n");
     SSL_write(ssl, buff3, strlen(buff3));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     // authentication start process
     char _cmd2[1000];
     strcpy(_cmd2, "AUTH LOGIN\r\n");
     int dfdf = SSL_write(ssl, _cmd2, strlen(_cmd2));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     // 'encoded' username is sent here
     char _cmd3[1000];
     Base64encode(_cmd3, UID, strlen(UID));
     strcat(_cmd3, "\r\n");
-    SSL_write(ssl, _cmd3,strlen(_cmd3));
+    SSL_write(ssl, _cmd3, strlen(_cmd3));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     // 'encoded' password is sent here
     char _cmd4[1000];
     Base64encode(_cmd4, UPD, strlen(UPD));
     strcat(_cmd4, "\r\n");
-    SSL_write(ssl,_cmd4,strlen(_cmd4));
+    SSL_write(ssl, _cmd4, strlen(_cmd4));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
     recvd += sdsd;
 
     // request to send a message
     char _cmd5[1000];
-    strcpy(_cmd5,"MAIL FROM:");
+    strcpy(_cmd5, "MAIL FROM:");
     strcat(_cmd5, FROM);
     strcat(_cmd5, "\r\n");
     SSL_write(ssl, _cmd5, strlen(_cmd5));
@@ -298,17 +303,17 @@ void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *d
 
     // recipients are informed here
     // this case for new subject message
-    if (opt[0]!='r' && opt[0]!='f'){
+    if (opt[0] != 'r' && opt[0] != 'f') {
         int TO_num = 0;
 
         printf("\nEnter the number of recipients:");
-        scanf("%d",&TO_num);
-        scanf("%c",&bin);
+        scanf("%d", &TO_num);
+        scanf("%c", &bin);
 
         // considers the case of multiple recipients
-        for(i = 0; i < TO_num; i++) {
+        for (i = 0; i < TO_num; i++) {
 
-            printf("Recipient email %d:", (i+1));
+            printf("Recipient email %d:", (i + 1));
 
             fgets(RID, sizeof(RID), stdin);
             strtok(RID, "\n");
@@ -321,12 +326,12 @@ void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *d
             char _cmd6[1000];
             strcpy(_cmd6, "RCPT TO: ");
             strcat(_cmd6, TO);
-            printf("\nTO: %s\n",TO);
+            printf("\nTO: %s\n", TO);
             strcat(_cmd6, "\r\n");
 
             SSL_write(ssl, _cmd6, strlen(_cmd6));
 
-            sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+            sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
             recvd += sdsd;
             strcpy(RID, "");
             strcpy(TO, "");
@@ -346,12 +351,12 @@ void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *d
         char _cmd6[1000];
         strcpy(_cmd6, "RCPT TO: ");
         strcat(_cmd6, TO);
-        printf("\nTO: %s\n",TO);
+        printf("\nTO: %s\n", TO);
         strcat(_cmd6, "\r\n");
 
         SSL_write(ssl, _cmd6, strlen(_cmd6));
 
-        sdsd = SSL_read(ssl, recv_buff + recvd, sizeof (recv_buff) - recvd);
+        sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
         recvd += sdsd;
         strcpy(RID_rep, "");
         strcpy(TO, "");
@@ -359,10 +364,10 @@ void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *d
 
     // starts to send the header and message
     char _cmd7[1000];
-    strcpy(_cmd7,"DATA\r\n");
-    SSL_write(ssl, _cmd7,strlen(_cmd7));
+    strcpy(_cmd7, "DATA\r\n");
+    SSL_write(ssl, _cmd7, strlen(_cmd7));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     char *header = MailHeader(FROM, TO_header, SUBJ, "text/plain", "US-ASCII");
     printf("\nHEADER:\n%s \n", header);
@@ -370,21 +375,21 @@ void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *d
     SSL_write(ssl, header, strlen(header));
 
     char _cmd8[1000];
-    strcpy(_cmd8,MSG);
-    SSL_write(ssl,_cmd8,strlen(_cmd8));
+    strcpy(_cmd8, MSG);
+    SSL_write(ssl, _cmd8, strlen(_cmd8));
 
     // end of SMTP commands
     char _cmd9[1000];
-    strcpy(_cmd9,"\r\n.\r\n.");
-    SSL_write(ssl,_cmd9,strlen(_cmd9));
+    strcpy(_cmd9, "\r\n.\r\n.");
+    SSL_write(ssl, _cmd9, strlen(_cmd9));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     char _cmd10[1000];
-    strcpy(_cmd10,"QUIT\r\n");
-    SSL_write(ssl, _cmd10,strlen(_cmd10));
+    strcpy(_cmd10, "QUIT\r\n");
+    SSL_write(ssl, _cmd10, strlen(_cmd10));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
     // printf("(0)%s\r\n", recv_buff);
     free(header);
 
@@ -392,7 +397,7 @@ void send_email(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *d
 
 // here the SMTP server checks if credentials are correct for login
 // process is equal to beginning of sending email
-void login_comands(char *UID, char * UPD, SSL *ssl, char *domain, int *in) {
+void login_comands(char *UID, char *UPD, SSL *ssl, char *domain, int *in) {
 
     int recvd = 0;
     char recv_buff[4768], copy[4768];
@@ -406,39 +411,39 @@ void login_comands(char *UID, char * UPD, SSL *ssl, char *domain, int *in) {
     strcpy(buff, "EHLO smtp.gmail.com");
     strcat(buff, domain);
     strcat(buff, "\r\n");
-    SSL_write(ssl, buff,strlen(buff));
+    SSL_write(ssl, buff, strlen(buff));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     char buff3[1000];
     strcpy(buff3, "STARTTLS");
     strcat(buff3, "\r\n");
     SSL_write(ssl, buff3, strlen(buff3));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     char _cmd2[1000];
     strcpy(_cmd2, "AUTH LOGIN\r\n");
     int dfdf = SSL_write(ssl, _cmd2, strlen(_cmd2));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     char _cmd3[1000];
     Base64encode(_cmd3, UID, strlen(UID));
     strcat(_cmd3, "\r\n");
-    SSL_write(ssl, _cmd3,strlen(_cmd3));
+    SSL_write(ssl, _cmd3, strlen(_cmd3));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     char _cmd4[1000];
     Base64encode(_cmd4, UPD, strlen(UPD));
     strcat(_cmd4, "\r\n");
-    SSL_write(ssl,_cmd4,strlen(_cmd4));
+    SSL_write(ssl, _cmd4, strlen(_cmd4));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
     recvd += sdsd;
 
     char _cmd10[1000];
-    strcpy(_cmd10,"QUIT\r\n");
+    strcpy(_cmd10, "QUIT\r\n");
     SSL_write(ssl, _cmd10, strlen(_cmd10));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
     recvd += sdsd;
@@ -446,9 +451,9 @@ void login_comands(char *UID, char * UPD, SSL *ssl, char *domain, int *in) {
 
     // here the SMTP reply to authentication try is checked
     // variable 'in' is used through the main to indicate user logged
-    if(strstr(recv_buff, "2.7.0 Accepted") != NULL)
+    if (strstr(recv_buff, "2.7.0 Accepted") != NULL)
         *in = 1;
-    else{
+    else {
         *in = 0;
         printf("\n>> Login Unsuccessful! Please try again! <<\n");
     }
@@ -469,16 +474,16 @@ void email_delete(char *UID, char *UPD, SSL *ssl, email *emails, int del) {
     strcpy(buff, "USER ");
     strcat(buff, UID);
     strcat(buff, "\r\n");
-    SSL_write(ssl, buff,strlen(buff));
+    SSL_write(ssl, buff, strlen(buff));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
     char buff3[1000];
     strcpy(buff3, "PASS ");
     strcat(buff3, UPD);
     strcat(buff3, "\r\n");
     SSL_write(ssl, buff3, strlen(buff3));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
 
     // command DELE + number of the email to POP3
@@ -493,17 +498,17 @@ void email_delete(char *UID, char *UPD, SSL *ssl, email *emails, int del) {
     char sdel[10];
     strcpy(buff4, "DELE ");
     sprintf(sdel, "%d", del);
-    strcat(buff4,sdel);
+    strcat(buff4, sdel);
     strcat(buff4, "\r\n");
     SSL_write(ssl, buff4, strlen(buff4));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     char _cmd10[1000];
-    strcpy(_cmd10,"QUIT\r\n");
-    SSL_write(ssl, _cmd10,strlen(_cmd10));
+    strcpy(_cmd10, "QUIT\r\n");
+    SSL_write(ssl, _cmd10, strlen(_cmd10));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
 }
 
@@ -511,7 +516,7 @@ void email_delete(char *UID, char *UPD, SSL *ssl, email *emails, int del) {
 // such as sender, time, subject and message text for each attribute of email struct
 void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
 
-    int recvd = 0, i=0;
+    int recvd = 0, i = 0;
     char recv_buff[4768];
     int sdsd;
 
@@ -522,7 +527,7 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
     strcpy(buff, "USER ");
     strcat(buff, UID);
     strcat(buff, "\r\n");
-    SSL_write(ssl, buff,strlen(buff));
+    SSL_write(ssl, buff, strlen(buff));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
     recvd += sdsd;
 
@@ -532,7 +537,7 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
     strcat(buff3, "\r\n");
     SSL_write(ssl, buff3, strlen(buff3));
     sdsd = SSL_read(ssl, recv_buff + recvd, sizeof(recv_buff) - recvd);
-    recvd +=sdsd;
+    recvd += sdsd;
 
     char *token;
     char *trash;
@@ -547,19 +552,19 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
     token = strtok(NULL, " ");
     *n_mes = strtol(token, &trash, 10);
 
-    printf("\nYou have in total ' %d ' messages in your inbox\n",*n_mes);
+    printf("\nYou have in total ' %d ' messages in your inbox\n", *n_mes);
 
-    if (*n_mes>=Inbox_Size)
-        *n_mes=Inbox_Size;
+    if (*n_mes >= Inbox_Size)
+        *n_mes = Inbox_Size;
 
     char _cmdmb[1000];
     char buffermb[10];
 
     // process to get sender, time, subject and text
-    for(i = 0; i < *n_mes; i++) {
+    for (i = 0; i < *n_mes; i++) {
 
         // RETR command retrieves all the data contained in an email
-        strcpy(_cmdmb,"RETR ");
+        strcpy(_cmdmb, "RETR ");
         sprintf(buffermb, "%d", i + 1);
 
         strcat(_cmdmb, buffermb);
@@ -575,11 +580,11 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
         //printf("\nFind info of %d\n",i+1);
 
         // requests the data coming until the end of the data of the email
-        while(SSL_read(ssl, message, sizeof(message)) != 0) {
+        while (SSL_read(ssl, message, sizeof(message)) != 0) {
 
             strcpy(copy, message);
             // locates substring indicating sender
-            if(strstr(copy, "\nFrom: ") != NULL) {
+            if (strstr(copy, "\nFrom: ") != NULL) {
                 token_1 = multi_tok(copy, "\nFrom: ");
                 token_1 = multi_tok(NULL, "\n");
 
@@ -589,7 +594,7 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
 
             // locates substring indicating time
             strcpy(copy, message);
-            if(strstr(message, "\nDate: ") != NULL) {
+            if (strstr(message, "\nDate: ") != NULL) {
                 token_1 = multi_tok(copy, "\nDate: ");
                 token_1 = multi_tok(NULL, "\n");
 
@@ -599,7 +604,7 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
 
             // locates substring indicating subject
             strcpy(copy, message);
-            if(strstr(message, "\nSubject: ") != NULL) {
+            if (strstr(message, "\nSubject: ") != NULL) {
 
                 token_1 = multi_tok(copy, "\nSubject: ");
                 token_1 = multi_tok(NULL, "\n");
@@ -613,7 +618,7 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
             // end of useful  information for general user
             // the program deals only with 'UTF-8', the most used in internet
             strcpy(copy, message);
-            if(strstr(message, "charset=\"UTF-8\"") != NULL) {
+            if (strstr(message, "charset=\"UTF-8\"") != NULL) {
 
                 token_1 = multi_tok(copy, "charset=\"UTF-8\"");
                 token_1 = multi_tok(NULL, "--");
@@ -628,7 +633,7 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
             }
 
             // end of message
-            if(strstr(message, "\n.") != NULL) {
+            if (strstr(message, "\n.") != NULL) {
                 break;
             }
         }
@@ -642,21 +647,24 @@ void check_mailbox(char *UID, char *UPD, SSL *ssl, email *emails, int *n_mes) {
 
 // here the user visualizes the mailbox and can interact with messages, i.e. with this funtion user can reply, forward and delete messages
 // which are processes redirected to other functions
-void inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, char *RID_rep, char *opt, char *MSG, char *UID, char *UPD) {
+void
+inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, char *RID_rep, char *opt, char *MSG, char *UID,
+           char *UPD) {
 
     int n_del = 0;
     int i = 0;
     char option[10];
     char ch[10], ch2[10], temp[10];
-    char *f_from=(char *) malloc(30);
-    char *bin=(char *) malloc(30);
+    char *f_from = (char *) malloc(30);
+    char *bin = (char *) malloc(30);
 
     // shows mailbox with sender, subject and time below each email
     printf("\n ================= EMAIL INBOX ================= \n");
 
-    for(i=*n_mes-1;i>=0;i--){
-        if(strcmp(emails[i].from,"")!=0)
-            printf("\n%d: From: %s\n Subject: %s\n Time: %s\n\n",i+1,emails[i].from,emails[i].subj,emails[i].time);
+    for (i = *n_mes - 1; i >= 0; i--) {
+        if (strcmp(emails[i].from, "") != 0)
+            printf("\n%d: From: %s\n Subject: %s\n Time: %s\n\n", i + 1, emails[i].from, emails[i].subj,
+                   emails[i].time);
     }
 
     printf("\n =============================================== \n");
@@ -668,11 +676,10 @@ void inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, cha
     scanf("%s", option);
 
     // while not selected 'go back' user stays in this inbox menu, i.e. the list of messages is shown after each complete interaction
-    while(atoi(option) != 3){
+    while (atoi(option) != 3) {
         printf("\nOption is %s\n", option);
 
-        switch(atoi(option))
-        {
+        switch (atoi(option)) {
             // read email option
             // variable 'ch' indicates option chosen of email to be read and is used for further option o interaction
             case 1:
@@ -680,9 +687,9 @@ void inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, cha
                 printf("\nChoose: ");
                 scanf("%s", ch);
 
-                while(ch[0] != 'b') {
+                while (ch[0] != 'b') {
 
-                    if(atoi(ch) > 0 && atoi(ch) <= *n_mes){
+                    if (atoi(ch) > 0 && atoi(ch) <= *n_mes) {
                         printf("\n ================= Email (No.%d) ================== \n", atoi(ch));
                         printf("\nFrom %s", emails[atoi(ch) - 1].from);
                         printf("\nSubj: %s", emails[atoi(ch) - 1].subj);
@@ -690,7 +697,7 @@ void inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, cha
                         printf("\n ================================================== \n");
                     }
                         // case of invalid number of email
-                    else if(atoi(ch) <= 0 || atoi(ch)>*n_mes) {
+                    else if (atoi(ch) <= 0 || atoi(ch) > *n_mes) {
                         printf("\nEmail does not exist! or option was not valid!\n\nPlease try again!\n\n");
 
                     }
@@ -698,13 +705,13 @@ void inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, cha
                     strcpy(temp, ch);
 
                     // after reading text, user can reply, forward
-                    printf("\nType number of email to read [Emails: %d-%d] or \n\n>> Reply[r] or Forward[f] or Go back[b] <<\n", 1, *n_mes);
+                    printf("\nType number of email to read [Emails: %d-%d] or \n\n>> Reply[r] or Forward[f] or Go back[b] <<\n",
+                           1, *n_mes);
                     printf("\nChoose: ");
                     scanf("%s", ch);
 
                     // reply option - subject and sender are exported to 'send_email' process
-                    if(ch[0] == 'r')
-                    {
+                    if (ch[0] == 'r') {
                         strcpy(opt, ch);
                         printf("\n>> Reply email Operation! << \n");
 
@@ -725,12 +732,11 @@ void inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, cha
                     }
 
                     // forward option - text and subject are exported to 'send_email' process
-                    if(ch[0]=='f')
-                    {
+                    if (ch[0] == 'f') {
                         strcpy(opt, ch);
                         printf("\n>> Forward email Operation! << \n");
 
-                        strcpy(f_from,emails[atoi(temp) - 1].from);
+                        strcpy(f_from, emails[atoi(temp) - 1].from);
                         bin = multi_tok(f_from, "<");
                         f_from = multi_tok(NULL, ">");
 
@@ -755,22 +761,24 @@ void inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, cha
                 printf("\nType number of email to delete [emails %d-%d] or \n\n>> Go Back[b] <<\n", 1, *n_mes);
                 printf("\nChoose: ");
                 scanf("%s", ch);
-                while(ch[0] != 'b'){
-                    if(atoi(ch) > 0 && atoi(ch) <= *n_mes){
+                while (ch[0] != 'b') {
+                    if (atoi(ch) > 0 && atoi(ch) <= *n_mes) {
                         // delete process handled by ssl_commands
-                        ssl_commands(UID, UPD, FROM, SUBJ, MSG, "pop.gmail.com", "gmail.com", 995, 3, emails, &n_mes, RID_rep, opt,
+                        ssl_commands(UID, UPD, FROM, SUBJ, MSG, "pop.gmail.com", "gmail.com", 995, 3, emails, &n_mes,
+                                     RID_rep, opt,
                                      (int *) 1, atoi(ch));
-                        strcpy(opt,"d");				 						 	return;
+                        strcpy(opt, "d");
+                        return;
                     }
                         // case of invalid number of email
-                    else if(atoi(ch)<=0 || atoi(ch)>*n_mes){
+                    else if (atoi(ch) <= 0 || atoi(ch) > *n_mes) {
                         printf("\nEmail does not exist! or option was not valid!\n\n Please try again!\n\n");
                     }
 
                     // user is asked about a new message to delete or to go back
-                    printf("\nType number of email to delete [emails %d-%d] or \n\n>> Go back[b] <<\n",1,*n_mes);
+                    printf("\nType number of email to delete [emails %d-%d] or \n\n>> Go back[b] <<\n", 1, *n_mes);
                     printf("\nChoose: ");
-                    scanf("%s",ch);
+                    scanf("%s", ch);
                 }
 
                 printf("\nDelete Process over!\n");
@@ -784,26 +792,26 @@ void inbox_menu(int *n_mes, email *emails, SSL *ssl, char *SUBJ, char *FROM, cha
 
         // mailbox is shown again after all interaction
         printf("\n ================= EMAIL INBOX ================= \n");
-        for(i=*n_mes-1;i>=0;i--){
-            if(strcmp(emails[i].from,"")!=0)
-                printf("\n%d: From: %s\n Subject: %s\n Time %s\n\n", i+1, emails[i].from, emails[i].subj, emails[i].time);
+        for (i = *n_mes - 1; i >= 0; i--) {
+            if (strcmp(emails[i].from, "") != 0)
+                printf("\n%d: From: %s\n Subject: %s\n Time %s\n\n", i + 1, emails[i].from, emails[i].subj,
+                       emails[i].time);
         }
 
         printf("\n =============================================== \n");
         printf(">> Options\n\t1.Read an Emaill\n\t2.Delete an Email\n\t3.GO Back\n");
         printf("\nChoose: ");
-        scanf("%s",option);
+        scanf("%s", option);
     }
 
     // end of loop when user selects 'go back'
     printf("\n\nBack to main page!\n");
     memset(opt, 0, sizeof(opt));
 
-    for(i = 0; i < Inbox_Size; i++)
-        memset(&emails[i],0,sizeof(emails[i]));
+    for (i = 0; i < Inbox_Size; i++)
+        memset(&emails[i], 0, sizeof(emails[i]));
 
 }
-
 
 
 void
@@ -816,7 +824,7 @@ ssl_commands(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *doma
     SSL_CTX *ctx;
     SSL *ssl;
     int connected_fd = 0;
-    int ret, i,acc=0;
+    int ret, i, acc = 0;
 
     OpenSSL_add_all_algorithms();
     ERR_load_BIO_strings();
@@ -825,39 +833,36 @@ ssl_commands(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *doma
     obj_bio = BIO_new(BIO_s_file());
     obj_out = BIO_new_fp(stdout, BIO_NOCLOSE);
 
-    if(SSL_library_init() < 0) {
+    if (SSL_library_init() < 0) {
         BIO_printf(obj_out, "Open_SSL not initialize");
     } else {
         method = SSLv23_client_method();
-        if((ctx = SSL_CTX_new(method)) == NULL) {
+        if ((ctx = SSL_CTX_new(method)) == NULL) {
             BIO_printf(obj_out, "OpenSSL context not initialize");
         } else {
             SSL_CTX_set_options(ctx, SSL_OP_NO_SSLv2);
             ssl = SSL_new(ctx);
-            connected_fd = connectToServer(domain_name,port_num);
+            connected_fd = connectToServer(domain_name, port_num);
 
-            if(connected_fd != 0) {
+            if (connected_fd != 0) {
                 BIO_printf(obj_out, "\nConnected successfully\n");
                 SSL_set_fd(ssl, connected_fd);
 
-                if(SSL_connect(ssl) != 1) {
+                if (SSL_connect(ssl) != 1) {
                     BIO_printf(obj_out, "SSL session not created");
                 } else {
-                    if (sel==0){
-                        login_comands(UID,UPD,ssl,domain,in);
-                    }
-                    else if (sel==1){
-                        send_email(UID,UPD,FROM,SUBJ,MSG,domain,ssl,RID_rep,opt);
-                    }
-                    else if (sel==2){
+                    if (sel == 0) {
+                        login_comands(UID, UPD, ssl, domain, in);
+                    } else if (sel == 1) {
+                        send_email(UID, UPD, FROM, SUBJ, MSG, domain, ssl, RID_rep, opt);
+                    } else if (sel == 2) {
                         printf("\nLoading Inbox...\n");
-                        check_mailbox(UID,UPD,ssl,emails,n_mes);
-                        inbox_menu(n_mes,emails,ssl,SUBJ,FROM,RID_rep,opt,MSG,UID,UPD);
-                    }
-                    else if (sel==3){
-                        printf("\nDeleting %d...\n",del);
-                        email_delete(UID,UPD,ssl,emails,del);
-                        printf("\nEmail %d deleted!\n\n",del);
+                        check_mailbox(UID, UPD, ssl, emails, n_mes);
+                        inbox_menu(n_mes, emails, ssl, SUBJ, FROM, RID_rep, opt, MSG, UID, UPD);
+                    } else if (sel == 3) {
+                        printf("\nDeleting %d...\n", del);
+                        email_delete(UID, UPD, ssl, emails, del);
+                        printf("\nEmail %d deleted!\n\n", del);
                         //check_mailbox(UID,UPD,ssl,emails,n_mes);
                         //printf("\nIN?\n");
                         //inbox_menu(n_mes,emails,ssl,SUBJ,FROM,RID_rep,opt,MSG,UID,UPD);
@@ -870,53 +875,49 @@ ssl_commands(char *UID, char *UPD, char *FROM, char *SUBJ, char *MSG, char *doma
 }
 
 
-void quit(){
+void quit() {
     printf("Quiting...\n");
     exit(0);
 }
 
-int main(){
+int main() {
 
     email emails[Inbox_Size];
-    int n_mes,in=0;
-    char opt[10]="";
-    char RID_rep[30]="";
-    char TEMP[30]="";
+    int n_mes, in = 0;
+    char opt[10] = "";
+    char RID_rep[30] = "";
+    char TEMP[30] = "";
 
     char UID[30];
     char UPD[30];
     char FROM[30];
     char SUBJ[100];
     char MSG[1000];
-    clear_strings(UID,UPD,FROM,SUBJ,MSG);
+    clear_strings(UID, UPD, FROM, SUBJ, MSG);
 
     printf("\n\nWelcome to our EMAIL_CLIENT!\n\n");
 
-    char choice[10],choice2[10];
+    char choice[10], choice2[10];
 
     main_page(choice);
-    printf("\nChoice was %d\n",atoi(choice));
-    while(atoi(choice) != 0)
-    {
-        switch(atoi(choice))
-        {
+    printf("\nChoice was %d\n", atoi(choice));
+    while (atoi(choice) != 0) {
+        switch (atoi(choice)) {
             case 1:
-                do{
-                    clear_strings(UID,UPD,FROM,SUBJ,MSG);
-                    login_process(UID,UPD,FROM,"gmail.com");
-                    ssl_commands(UID,UPD,FROM,SUBJ,MSG,"smtp.gmail.com","gmail.com",465,0,emails,&n_mes,RID_rep,opt,&in,0);
-                }
-                while(in!=1);
+                do {
+                    clear_strings(UID, UPD, FROM, SUBJ, MSG);
+                    login_process(UID, UPD, FROM, "gmail.com");
+                    ssl_commands(UID, UPD, FROM, SUBJ, MSG, "smtp.gmail.com", "gmail.com", 465, 0, emails, &n_mes,
+                                 RID_rep, opt, &in, 0);
+                } while (in != 1);
                 printf("\n>> Login Successful!<<\n");
-                login_page(UID,choice2);
-                while(atoi(choice2) != 0)
-                {
-                    switch(atoi(choice2))
-                    {
+                login_page(UID, choice2);
+                while (atoi(choice2) != 0) {
+                    switch (atoi(choice2)) {
                         case 1:
                             printf("\n>> Send email Operation! <<\n");
-                            printf("\nUID: %s\n",UID);
-                            printf("\nUPD: %s\n",UPD);
+                            printf("\nUID: %s\n", UID);
+                            printf("\nUPD: %s\n", UPD);
 
                             printf("\nEnter the Subject of the email: ");
                             getchar();
@@ -925,25 +926,28 @@ int main(){
                             printf("\nEnter the text of the email: ");
                             fgets(MSG, sizeof(MSG), stdin);
 
-                            ssl_commands(UID,UPD,FROM,SUBJ,MSG,"smtp.gmail.com","gmail.com",465,1,emails,&n_mes,RID_rep,opt,&in,0);
+                            ssl_commands(UID, UPD, FROM, SUBJ, MSG, "smtp.gmail.com", "gmail.com", 465, 1, emails,
+                                         &n_mes, RID_rep, opt, &in, 0);
                             printf("\nEmail send successfully!\n");
                             break;
                         case 2:
-                            memset(SUBJ,0,sizeof(SUBJ));
-                            memset(MSG,0,sizeof(MSG));
-                            memset(RID_rep,0,sizeof(RID_rep));
+                            memset(SUBJ, 0, sizeof(SUBJ));
+                            memset(MSG, 0, sizeof(MSG));
+                            memset(RID_rep, 0, sizeof(RID_rep));
 
-                            ssl_commands(UID,UPD,FROM,SUBJ,MSG,"pop.gmail.com","gmail.com",995,2,emails,&n_mes,RID_rep,opt,&in,0);
-                            if(opt[0]=='r'){
+                            ssl_commands(UID, UPD, FROM, SUBJ, MSG, "pop.gmail.com", "gmail.com", 995, 2, emails,
+                                         &n_mes, RID_rep, opt, &in, 0);
+                            if (opt[0] == 'r') {
                                 printf("\nEnter the text of the email: ");
                                 getchar();
                                 fgets(MSG, sizeof(MSG), stdin);
-                                ssl_commands(UID,UPD,FROM,SUBJ,MSG,"smtp.gmail.com","gmail.com",465,1,emails,&n_mes,RID_rep,opt,&in,0);
+                                ssl_commands(UID, UPD, FROM, SUBJ, MSG, "smtp.gmail.com", "gmail.com", 465, 1, emails,
+                                             &n_mes, RID_rep, opt, &in, 0);
                                 printf("\nEmail replied successfully!\n");
-                                memset(opt,0,sizeof(opt));
+                                memset(opt, 0, sizeof(opt));
                             }
 
-                            if(opt[0]=='f'){
+                            if (opt[0] == 'f') {
                                 printf("\nEnter the recipient of the email: ");
                                 getchar();
                                 fgets(RID_rep, sizeof(RID_rep), stdin);
@@ -951,28 +955,30 @@ int main(){
                                 strcat(TEMP, "<");
                                 strcat(TEMP, RID_rep);
                                 strcat(TEMP, ">");
-                                ssl_commands(UID,UPD,FROM,SUBJ,MSG,"smtp.gmail.com","gmail.com",465,1,emails, &n_mes, TEMP, opt,&in,0);
+                                ssl_commands(UID, UPD, FROM, SUBJ, MSG, "smtp.gmail.com", "gmail.com", 465, 1, emails,
+                                             &n_mes, TEMP, opt, &in, 0);
                                 printf("\nEmail forwarded successfully!\n");
-                                memset(opt,0,sizeof(opt));
+                                memset(opt, 0, sizeof(opt));
                             }
-                            while(opt[0]=='d'){
+                            while (opt[0] == 'd') {
                                 printf("\nHey!\n");
-                                ssl_commands(UID,UPD,FROM,SUBJ,MSG,"pop.gmail.com","gmail.com",995,2,emails,&n_mes,RID_rep,opt,&in,0);
+                                ssl_commands(UID, UPD, FROM, SUBJ, MSG, "pop.gmail.com", "gmail.com", 995, 2, emails,
+                                             &n_mes, RID_rep, opt, &in, 0);
                             }
 
                             break;
                         case 3:
-                            clear_strings(UID,UPD,FROM,SUBJ,MSG);
+                            clear_strings(UID, UPD, FROM, SUBJ, MSG);
                             printf("\nUser just signed out!\n");
                             break;
 
                         default:
-                            clear_strings(UID,UPD,FROM,SUBJ,MSG);
+                            clear_strings(UID, UPD, FROM, SUBJ, MSG);
                             printf("\nAn invalid choice has slipped through.\nPlease try again\n\n");
                     }
-                    if(atoi(choice2)==3)
+                    if (atoi(choice2) == 3)
                         break;
-                    login_page(UID,choice2);
+                    login_page(UID, choice2);
                 }
                 break;
 
