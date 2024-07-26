@@ -5,15 +5,14 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
-#include <openssl/applink.c>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
 #pragma comment(lib, "ws2_32.lib") // Winsock Library
 #define BUFFER_SIZE 1024
 
-#define FROM_EMAIL "andrew.ferro04@gmail.com"
-#define TO_EMAIL "tizzi70@gmail.com"
+#define FROM_EMAIL "tizzi70@gmail.com"
+#define TO_EMAIL "andrew.ferro04@gmail.com"
 #define SUBJECT "Test Email from C Program"
 #define BODY "This is a test email sent from a C program using SMTP."
 
@@ -46,7 +45,25 @@ char *base64(const char *input) {
     return buffer;
 }
 
-int send_command(SSL *ssl, const char *command) {
+int send_command(SOCKET sock, const char *command) {
+    if (send(sock, command, strlen(command), 0) == SOCKET_ERROR) {
+        printf("Failed to send command: %d\n", WSAGetLastError());
+        return -1;
+    }
+    return 0;
+}
+
+int recv_response(SOCKET sock, char *response) {
+    int recv_size = recv(sock, response, BUFFER_SIZE, 0);
+    if (recv_size == SOCKET_ERROR) {
+        printf("Failed to receive response: %d\n", WSAGetLastError());
+        return -1;
+    }
+    response[recv_size] = '\0'; // Null-terminate the response
+    return 0;
+}
+
+int send_ssl_command(SSL *ssl, const char *command) {
     if (SSL_write(ssl, command, strlen(command)) <= 0) {
         ERR_print_errors_fp(stderr);
         return -1;
@@ -54,7 +71,7 @@ int send_command(SSL *ssl, const char *command) {
     return 0;
 }
 
-int recv_response(SSL *ssl, char *response) {
+int recv_ssl_response(SSL *ssl, char *response) {
     int recv_size = SSL_read(ssl, response, BUFFER_SIZE);
     if (recv_size <= 0) {
         ERR_print_errors_fp(stderr);
@@ -65,7 +82,6 @@ int recv_response(SSL *ssl, char *response) {
 }
 
 int main() {
-    OPENSSL_malloc_init();
     WSADATA wsa;
     SOCKET sock = INVALID_SOCKET;
     struct sockaddr_in server;
@@ -104,6 +120,35 @@ int main() {
     }
     printf("Connected\n");
 
+    if (recv(sock, server_reply, BUFFER_SIZE, 0) <= 0) {
+        printf("Failed to receive server greeting\n");
+        cleanup(NULL, NULL, sock);
+        return 1;
+    }
+    printf("Server greeting: %s\n", server_reply);
+
+    if (send_command(sock, "EHLO localhost\r\n") != 0) {
+        cleanup(NULL, NULL, sock);
+        return 1;
+    }
+
+    if (recv_response(sock, server_reply) != 0) {
+        cleanup(NULL, NULL, sock);
+        return 1;
+    }
+    printf("EHLO response: %s\n", server_reply);
+
+    if (send_command(sock, "STARTTLS\r\n") != 0) {
+        cleanup(NULL, NULL, sock);
+        return 1;
+    }
+
+    if (recv_response(sock, server_reply) != 0) {
+        cleanup(NULL, NULL, sock);
+        return 1;
+    }
+    printf("STARTTLS response: %s\n", server_reply);
+
     SSL_library_init();
     SSL_load_error_strings();
     ctx = SSL_CTX_new(TLS_client_method());
@@ -123,102 +168,96 @@ int main() {
     }
     printf("TLS handshake completed.\n");
 
-    // Send EHLO command
-    if (send_command(ssl, "EHLO localhost\r\n") != 0) {
+    if (send_ssl_command(ssl, "EHLO localhost\r\n") != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply EHLO over TLS: %s\n", server_reply);
+    printf("EHLO response over TLS: %s\n", server_reply);
 
-    // Authentication
-    if (send_command(ssl, "AUTH LOGIN\r\n") != 0) {
+    if (send_ssl_command(ssl, "AUTH LOGIN\r\n") != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply AUTH LOGIN: %s\n", server_reply);
+    printf("AUTH LOGIN response: %s\n", server_reply);
 
     char *encoded_username = base64(FROM_EMAIL);
-    if (send_command(ssl, encoded_username) != 0) {
+    if (send_ssl_command(ssl, encoded_username) != 0) {
         free(encoded_username);
         cleanup(ssl, ctx, sock);
         return 1;
     }
     free(encoded_username);
-    send_command(ssl, "\r\n");
+    send_ssl_command(ssl, "\r\n");
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply username: %s\n", server_reply);
+    printf("Username response: %s\n", server_reply);
 
     char password[] = "lrbh wgrk iywr gldv";
     char *encoded_password = base64(password);
-    if (send_command(ssl, encoded_password) != 0) {
+    if (send_ssl_command(ssl, encoded_password) != 0) {
         free(encoded_password);
         cleanup(ssl, ctx, sock);
         return 1;
     }
     free(encoded_password);
-    send_command(ssl, "\r\n");
+    send_ssl_command(ssl, "\r\n");
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply password: %s\n", server_reply);
+    printf("Password response: %s\n", server_reply);
 
-    // Send MAIL FROM command
     char mail_from_command[BUFFER_SIZE];
     snprintf(mail_from_command, BUFFER_SIZE, "MAIL FROM:<%s>\r\n", FROM_EMAIL);
-    if (send_command(ssl, mail_from_command) != 0) {
+    if (send_ssl_command(ssl, mail_from_command) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply MAIL FROM: %s\n", server_reply);
+    printf("MAIL FROM response: %s\n", server_reply);
 
-    // Send RCPT TO command
     char rcpt_to_command[BUFFER_SIZE];
     snprintf(rcpt_to_command, BUFFER_SIZE, "RCPT TO:<%s>\r\n", TO_EMAIL);
-    if (send_command(ssl, rcpt_to_command) != 0) {
+    if (send_ssl_command(ssl, rcpt_to_command) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply RCPT TO: %s\n", server_reply);
+    printf("RCPT TO response: %s\n", server_reply);
 
-    // Send DATA command
-    if (send_command(ssl, "DATA\r\n") != 0) {
+    if (send_ssl_command(ssl, "DATA\r\n") != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply DATA: %s\n", server_reply);
+    printf("DATA response: %s\n", server_reply);
 
-    // Send email headers and body
     char email_headers_and_body[BUFFER_SIZE];
     snprintf(email_headers_and_body, BUFFER_SIZE,
              "Subject: %s\r\n"
@@ -228,28 +267,27 @@ int main() {
              "%s\r\n.\r\n",
              SUBJECT, FROM_EMAIL, TO_EMAIL, BODY);
 
-    if (send_command(ssl, email_headers_and_body) != 0) {
+    if (send_ssl_command(ssl, email_headers_and_body) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply end of DATA: %s\n", server_reply);
+    printf("End of DATA response: %s\n", server_reply);
 
-    // Send QUIT command
-    if (send_command(ssl, "QUIT\r\n") != 0) {
+    if (send_ssl_command(ssl, "QUIT\r\n") != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
 
-    if (recv_response(ssl, server_reply) != 0) {
+    if (recv_ssl_response(ssl, server_reply) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Server reply QUIT: %s\n", server_reply);
+    printf("QUIT response: %s\n", server_reply);
 
     cleanup(ssl, ctx, sock);
     return 0;
