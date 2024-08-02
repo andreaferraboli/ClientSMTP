@@ -11,11 +11,7 @@
 
 #pragma comment(lib, "ws2_32.lib") // Winsock Library
 #define BUFFER_SIZE 1024
-
-#define FROM_EMAIL "tizzi70@gmail.com"
-#define TO_EMAIL "andrew.ferro04@gmail.com"
-#define SUBJECT "Test Email from C Program"
-#define BODY "This is a test email sent from a C program using SMTP."
+#define MAX_RECIPIENTS 10
 
 void cleanup(SSL *ssl, SSL_CTX *ctx, SOCKET sock) {
     if (ssl) SSL_free(ssl);
@@ -45,7 +41,8 @@ char *base64(const char *input, int length) {
 
     return buffer;
 }
-char* get_file_path() {
+
+char *get_file_path() {
     OPENFILENAME ofn;       // Struttura contenente informazioni per il prompt di apertura file
     char file_path[MAX_PATH] = "";  // Buffer per il percorso del file
 
@@ -127,150 +124,141 @@ char *read_file(const char *filename, long *length) {
     return buffer;
 }
 
+
 typedef struct {
     const char *extension;
     const char *mime_type;
 } MimeType;
 
 static int mime_type_compare(const void *a, const void *b) {
-    return strcmp(((const MimeType *)a)->extension, ((const MimeType *)b)->extension);
-}
-void sort_and_print_mime_types(const MimeType *mime_types, size_t num_mime_types) {
-    printf("Inizio della funzione sort_and_print_mime_types\n");
-    printf("Numero di tipi MIME da ordinare e stampare: %zu\n", num_mime_types);
-
-    // Sort the mime_types array by extension
-    printf("Inizio ordinamento dei tipi MIME...\n");
-    //TODO: non va questo qsort
-    qsort((void *)mime_types, num_mime_types, sizeof(MimeType), mime_type_compare);
-    printf("Ordinamento completato\n");
-
-    // Print the sorted mime types
-    printf("Stampa dei tipi MIME ordinati:\n");
-    for (size_t i = 0; i < num_mime_types; ++i) {
-        printf("Tipo MIME %zu: Estensione: %s, Tipo MIME: %s\n",
-               i+1, mime_types[i].extension, mime_types[i].mime_type);
-    }
-    printf("Stampa completata\n");
-
-    printf("Fine della funzione sort_and_print_mime_types\n\n");
+    return strcmp(((const MimeType *) a)->extension, ((const MimeType *) b)->extension);
 }
 
-
-static const MimeType mime_types[] = {
-        {".aac", "audio/aac"},
-        {".abw", "application/x-abiword"},
-        {".arc", "application/x-freearc"},
-        {".avif", "image/avif"},
-        {".avi", "video/x-msvideo"},
-        {".azw", "application/vnd.amazon.ebook"},
-        {".bin", "application/octet-stream"},
-        {".bmp", "image/bmp"},
-        {".bz", "application/x-bzip"},
-        {".bz2", "application/x-bzip2"},
-        {".cda", "application/x-cdf"},
-        {".csh", "application/x-csh"},
-        {".css", "text/css"},
-        {".csv", "text/csv"},
-        {".doc", "application/msword"},
-        {".docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
-        {".eot", "application/vnd.ms-fontobject"},
-        {".epub", "application/epub+zip"},
-        {".gz", "application/gzip"},
-        {".gif", "image/gif"},
-        {".htm", "text/html"},
-        {".html", "text/html"},
-        {".ico", "image/vnd.microsoft.icon"},
-        {".ics", "text/calendar"},
-        {".jar", "application/java-archive"},
-        {".jpeg", "image/jpeg"},
-        {".jpg", "image/jpeg"},
-        {".js", "text/javascript"},
-        {".json", "application/json"},
+static MimeType mime_types[] = {
+        {".aac",    "audio/aac"},
+        {".abw",    "application/x-abiword"},
+        {".arc",    "application/x-freearc"},
+        {".avif",   "image/avif"},
+        {".avi",    "video/x-msvideo"},
+        {".azw",    "application/vnd.amazon.ebook"},
+        {".bin",    "application/octet-stream"},
+        {".bmp",    "image/bmp"},
+        {".bz",     "application/x-bzip"},
+        {".bz2",    "application/x-bzip2"},
+        {".cda",    "application/x-cdf"},
+        {".csh",    "application/x-csh"},
+        {".css",    "text/css"},
+        {".csv",    "text/csv"},
+        {".doc",    "application/msword"},
+        {".docx",   "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+        {".eot",    "application/vnd.ms-fontobject"},
+        {".epub",   "application/epub+zip"},
+        {".gz",     "application/gzip"},
+        {".gif",    "image/gif"},
+        {".htm",    "text/html"},
+        {".html",   "text/html"},
+        {".ico",    "image/vnd.microsoft.icon"},
+        {".ics",    "text/calendar"},
+        {".jar",    "application/java-archive"},
+        {".jpeg",   "image/jpeg"},
+        {".jpg",    "image/jpeg"},
+        {".js",     "text/javascript"},
+        {".json",   "application/json"},
         {".jsonld", "application/ld+json"},
-        {".mid", "audio/midi"},
-        {".midi", "audio/midi"},
-        {".mjs", "text/javascript"},
-        {".mp3", "audio/mpeg"},
-        {".mp4", "video/mp4"},
-        {".mpeg", "video/mpeg"},
-        {".mpkg", "application/vnd.apple.installer+xml"},
-        {".odp", "application/vnd.oasis.opendocument.presentation"},
-        {".ods", "application/vnd.oasis.opendocument.spreadsheet"},
-        {".odt", "application/vnd.oasis.opendocument.text"},
-        {".oga", "audio/ogg"},
-        {".ogv", "video/ogg"},
-        {".ogx", "application/ogg"},
-        {".opus", "audio/opus"},
-        {".otf", "font/otf"},
-        {".png", "image/png"},
-        {".pdf", "application/pdf"},
-        {".php", "application/x-httpd-php"},
-        {".ppt", "application/vnd.ms-powerpoint"},
-        {".pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
-        {".rar", "application/vnd.rar"},
-        {".rtf", "application/rtf"},
-        {".sh", "application/x-sh"},
-        {".svg", "image/svg+xml"},
-        {".swf", "application/x-shockwave-flash"},
-        {".tar", "application/x-tar"},
-        {".tif", "image/tiff"},
-        {".tiff", "image/tiff"},
-        {".ts", "video/mp2t"},
-        {".ttf", "font/ttf"},
-        {".txt", "text/plain"},
-        {".vsd", "application/vnd.visio"},
-        {".wav", "audio/wav"},
-        {".weba", "audio/webm"},
-        {".webm", "video/webm"},
-        {".webp", "image/webp"},
-        {".woff", "font/woff"},
-        {".woff2", "font/woff2"},
-        {".xhtml", "application/xhtml+xml"},
-        {".xls", "application/vnd.ms-excel"},
-        {".xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
-        {".xml", "application/xml"},
-        {".xul", "application/vnd.mozilla.xul+xml"},
-        {".zip", "application/zip"},
-        {".3gp", "video/3gpp"},
-        {".3g2", "video/3gpp2"},
-        {".7z", "application/x-7z-compressed"}
+        {".mid",    "audio/midi"},
+        {".midi",   "audio/midi"},
+        {".mjs",    "text/javascript"},
+        {".mp3",    "audio/mpeg"},
+        {".mp4",    "video/mp4"},
+        {".mpeg",   "video/mpeg"},
+        {".mpkg",   "application/vnd.apple.installer+xml"},
+        {".odp",    "application/vnd.oasis.opendocument.presentation"},
+        {".ods",    "application/vnd.oasis.opendocument.spreadsheet"},
+        {".odt",    "application/vnd.oasis.opendocument.text"},
+        {".oga",    "audio/ogg"},
+        {".ogv",    "video/ogg"},
+        {".ogx",    "application/ogg"},
+        {".opus",   "audio/opus"},
+        {".otf",    "font/otf"},
+        {".png",    "image/png"},
+        {".pdf",    "application/pdf"},
+        {".php",    "application/x-httpd-php"},
+        {".ppt",    "application/vnd.ms-powerpoint"},
+        {".pptx",   "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+        {".rar",    "application/vnd.rar"},
+        {".rtf",    "application/rtf"},
+        {".sh",     "application/x-sh"},
+        {".svg",    "image/svg+xml"},
+        {".swf",    "application/x-shockwave-flash"},
+        {".tar",    "application/x-tar"},
+        {".tif",    "image/tiff"},
+        {".tiff",   "image/tiff"},
+        {".ts",     "video/mp2t"},
+        {".ttf",    "font/ttf"},
+        {".txt",    "text/plain"},
+        {".vsd",    "application/vnd.visio"},
+        {".wav",    "audio/wav"},
+        {".weba",   "audio/webm"},
+        {".webm",   "video/webm"},
+        {".webp",   "image/webp"},
+        {".woff",   "font/woff"},
+        {".woff2",  "font/woff2"},
+        {".xhtml",  "application/xhtml+xml"},
+        {".xls",    "application/vnd.ms-excel"},
+        {".xlsx",   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+        {".xml",    "application/xml"},
+        {".xul",    "application/vnd.mozilla.xul+xml"},
+        {".zip",    "application/zip"},
+        {".3gp",    "video/3gpp"},
+        {".3g2",    "video/3gpp2"},
+        {".7z",     "application/x-7z-compressed"}
 };
 
 
 const char *get_mime_type(const char *filename) {
-    printf("Inizio della funzione get_mime_type per il file: %s\n", filename);
 
     size_t num_mime_types = sizeof(mime_types) / sizeof(mime_types[0]);
-    printf("Numero di tipi MIME disponibili: %zu\n", num_mime_types);
 
-    sort_and_print_mime_types(mime_types, num_mime_types);
-    printf("Tipi MIME ordinati e stampati\n");
+    qsort(mime_types, num_mime_types, sizeof(MimeType), mime_type_compare);
 
     const char *dot = strrchr(filename, '.');
     if (!dot || dot == filename) {
-        printf("Nessuna estensione trovata o estensione non valida. Restituisco 'application/octet-stream'\n");
         return "application/octet-stream";
     }
-    printf("Estensione del file trovata: %s\n", dot);
 
-    MimeType key = { dot, NULL };
-    printf("Chiave di ricerca creata con l'estensione: %s\n", key.extension);
+    MimeType key = {dot, NULL};
 
     MimeType *result = bsearch(&key, mime_types,
                                sizeof(mime_types) / sizeof(mime_types[0]),
                                sizeof(MimeType), mime_type_compare);
 
     if (result) {
-        printf("Tipo MIME trovato: %s\n", result->mime_type);
         return result->mime_type;
     } else {
-        printf("Nessun tipo MIME specifico trovato. Restituisco 'application/octet-stream'\n");
         return "application/octet-stream";
     }
 }
 
-
+void get_password(char *password, int max_length) {
+    int i = 0;
+    char ch;
+    while (1) {
+        ch = getchar();
+        if (ch == 13) // Enter key
+            break;
+        if (ch == 8) { // Backspace
+            if (i > 0) {
+                i--;
+                printf("\b \b");
+            }
+        } else if (i < max_length - 1) {
+            password[i++] = ch;
+            printf("*");
+        }
+    }
+    password[i] = '\0';
+    printf("\n");
+}
 int main() {
     WSADATA wsa;
     SOCKET sock = INVALID_SOCKET;
@@ -278,6 +266,10 @@ int main() {
     SSL_CTX *ctx = NULL;
     SSL *ssl = NULL;
     char server_reply[BUFFER_SIZE];
+    char from_email[100];
+    char password[100];
+    char SUBJECT[BUFFER_SIZE];
+    char BODY[BUFFER_SIZE];
 
     printf("\nInitializing Winsock...");
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) {
@@ -302,6 +294,12 @@ int main() {
         return 1;
     }
     server.sin_addr.s_addr = *(u_long *) host->h_addr_list[0];
+    char *ip = inet_ntoa(*(struct in_addr *) host->h_addr_list[0]);
+    if (ip == NULL) {
+        printf("inet_ntoa failed\n");
+        return 1;
+    }
+    printf("Resolved IP address of gmail smtp: %s\n", ip);
 
     if (connect(sock, (struct sockaddr *) &server, sizeof(server)) < 0) {
         printf("Connect error\n");
@@ -380,7 +378,19 @@ int main() {
     }
     printf("AUTH LOGIN response: %s\n", server_reply);
 
-    char *encoded_username = base64(FROM_EMAIL, strlen(FROM_EMAIL));
+
+
+    printf("Inserisci l'indirizzo email del mittente: ");
+    fgets(from_email, sizeof(from_email), stdin);
+    from_email[strcspn(from_email, "\n")] = 0; // Rimuovi il newline
+
+    printf("Inserisci la password: ");
+    fgets(password, sizeof(password), stdin);
+    password[strcspn(password, "\n")] = 0; // Rimuovi il newline
+//    get_password(password, sizeof(password));
+
+
+    char *encoded_username = base64(from_email, strlen(from_email));
     if (send_ssl_command(ssl, encoded_username) != 0) {
         free(encoded_username);
         cleanup(ssl, ctx, sock);
@@ -395,7 +405,6 @@ int main() {
     }
     printf("Username response: %s\n", server_reply);
 
-    char password[] = "lrbh wgrk iywr gldv";
     char *encoded_password = base64(password, strlen(password));
     if (send_ssl_command(ssl, encoded_password) != 0) {
         free(encoded_password);
@@ -412,7 +421,7 @@ int main() {
     printf("Password response: %s\n", server_reply);
 
     char mail_from_command[BUFFER_SIZE];
-    snprintf(mail_from_command, BUFFER_SIZE, "MAIL FROM:<%s>\r\n", FROM_EMAIL);
+    snprintf(mail_from_command, BUFFER_SIZE, "MAIL FROM:<%s>\r\n", from_email);
     if (send_ssl_command(ssl, mail_from_command) != 0) {
         cleanup(ssl, ctx, sock);
         return 1;
@@ -423,19 +432,39 @@ int main() {
         return 1;
     }
     printf("MAIL FROM response: %s\n", server_reply);
+    char to_emails[MAX_RECIPIENTS][100];
+    int num_recipients = 0;
 
-    char rcpt_to_command[BUFFER_SIZE];
-    snprintf(rcpt_to_command, BUFFER_SIZE, "RCPT TO:<%s>\r\n", TO_EMAIL);
-    if (send_ssl_command(ssl, rcpt_to_command) != 0) {
-        cleanup(ssl, ctx, sock);
-        return 1;
+    // Chiedi all'utente di inserire gli indirizzi email dei destinatari
+    printf("Inserisci gli indirizzi email dei destinatari (massimo %d, inserisci 'fine' per terminare):\n",
+           MAX_RECIPIENTS);
+    while (num_recipients < MAX_RECIPIENTS) {
+        printf("Destinatario %d: ", num_recipients + 1);
+        fgets(to_emails[num_recipients], sizeof(to_emails[num_recipients]), stdin);
+        to_emails[num_recipients][strcspn(to_emails[num_recipients], "\n")] = 0; // Rimuovi il newline
+
+        if (strcmp(to_emails[num_recipients], "fine") == 0) {
+            break;
+        }
+        num_recipients++;
     }
 
-    if (recv_ssl_response(ssl, server_reply) != 0) {
-        cleanup(ssl, ctx, sock);
-        return 1;
+    for (int i = 0; i < num_recipients; i++) {
+        char rcpt_to_command[BUFFER_SIZE];
+        snprintf(rcpt_to_command, BUFFER_SIZE, "RCPT TO:<%s>\r\n", to_emails[i]);
+        if (send_ssl_command(ssl, rcpt_to_command) != 0) {
+            printf("Errore nell'invio del comando RCPT TO per %s\n", to_emails[i]);
+            cleanup(ssl, ctx, sock);
+            return 1;
+        }
+
+        if (recv_ssl_response(ssl, server_reply) != 0) {
+            printf("Errore nella ricezione della risposta RCPT TO per %s\n", to_emails[i]);
+            cleanup(ssl, ctx, sock);
+            return 1;
+        }
+        printf("RCPT TO response for %s: %s\n", to_emails[i], server_reply);
     }
-    printf("RCPT TO response: %s\n", server_reply);
 
     if (send_ssl_command(ssl, "DATA\r\n") != 0) {
         cleanup(ssl, ctx, sock);
@@ -467,12 +496,27 @@ int main() {
             printf("Nessun file selezionato o errore nell'apertura del file.\n");
         }
     }
-
-// Costruisci intestazioni email prima del ciclo
-    char email_headers[BUFFER_SIZE];
+// Modifica l'intestazione "To:" dell'email per includere tutti i destinatari
+    char to_header[BUFFER_SIZE] = "To: ";
+    for (int i = 0; i < num_recipients; i++) {
+        strcat(to_header, to_emails[i]);
+        if (i < num_recipients - 1) {
+            strcat(to_header, ", ");
+        }
+    }
+    strcat(to_header, "\r\n");
+// Chiedi all'utente di inserire l'oggetto dell'email
+    printf("Inserisci l'oggetto dell'email: ");
+    fgets(SUBJECT, sizeof(SUBJECT), stdin);
+    SUBJECT[strcspn(SUBJECT, "\n")] = 0;
+    printf("Inserisci il corpo dell'email: ");
+    fgets(BODY, sizeof(BODY), stdin);
+    BODY[strcspn(BODY, "\n")] = 0;
+    // Aggiorna la costruzione delle intestazioni email
+    char email_headers[BUFFER_SIZE * 2];  // Aumenta la dimensione del buffer
     snprintf(email_headers, sizeof(email_headers),
              "From: %s\r\n"
-             "To: %s\r\n"
+             "%s"
              "Subject: %s\r\n"
              "MIME-Version: 1.0\r\n"
              "Content-Type: multipart/mixed; boundary=\"boundary1\"\r\n"
@@ -480,17 +524,18 @@ int main() {
              "--boundary1\r\n"
              "Content-Type: text/plain\r\n"
              "\r\n"
-             "%s\r\n", FROM_EMAIL, TO_EMAIL, SUBJECT, BODY);
+             "%s\r\n", from_email, to_header, SUBJECT, BODY);
 
-// Invia intestazioni dell'email
+    // Invia le intestazioni email
     if (send_ssl_command(ssl, email_headers) != 0) {
+        printf("Errore nell'invio delle intestazioni email\n");
         cleanup(ssl, ctx, sock);
         return 1;
     }
-    printf("Email headers sent\n");
+    printf("Intestazioni email inviate con successo\n");
 // Ciclo per inviare i file selezionati
     for (int i = 0; i < num_files; i++) {
-        printf("Elaborazione del file %d di %d\n", i+1, num_files);
+        printf("Elaborazione del file %d di %d\n", i + 1, num_files);
 
         long file_length;
         char *file_content = read_file(file_paths[i], &file_length);

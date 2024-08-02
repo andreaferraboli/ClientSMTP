@@ -12,7 +12,7 @@
 #define BUFFER_SIZE 1024
 
 #define FROM_EMAIL "tizzi70@gmail.com"
-#define TO_EMAIL "andrew.ferro04@gmail.com"
+#define TO_EMAIL "andreaferraboli2004@gmail.com"
 #define SUBJECT "Test Email from C Program"
 #define BODY "This is a test email sent from a C program using SMTP."
 
