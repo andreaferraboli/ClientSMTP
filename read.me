@@ -1,0 +1,49 @@
+# README: Compilazione del progetto multiRuntimeAttachements
+
+Questo documento spiega come compilare il file `multiRuntimeAttachements.c` utilizzando GCC con le dipendenze necessarie.
+
+## Comando di compilazione
+
+```
+gcc -I "C:\OpenSSL\include" -L "C:\OpenSSL" multiRuntimeAttachements.c -lws2_32 -lssl -lcrypto -lcomdlg32 -o multiRuntimeMicrosoft
+```
+
+## Spiegazione del comando
+
+Il comando sopra compila il file sorgente C e crea un eseguibile. Ecco una spiegazione dettagliata di ogni parte del comando:
+
+1. `gcc`: Il compilatore GNU C che stiamo utilizzando per compilare il codice.
+
+2. `-I "C:\OpenSSL\include"`: Specifica la directory dove trovare i file di intestazione (header files) aggiuntivi. In questo caso, stiamo includendo la directory di OpenSSL.
+
+3. `-L "C:\OpenSSL"`: Specifica la directory dove trovare le librerie aggiuntive. Qui, stiamo indicando la directory di OpenSSL per le librerie.
+
+4. `multiRuntimeAttachements.c`: Il file sorgente C che stiamo compilando.
+
+5. `-lws2_32`: Collega la libreria Winsock2 (ws2_32.dll), necessaria per la programmazione di rete su Windows.
+
+6. `-lssl -lcrypto`: Collega le librerie OpenSSL (libssl e libcrypto), necessarie per la crittografia e le funzionalità SSL/TLS.
+
+7. `-lcomdlg32`: Collega la libreria Common Dialog (comdlg32.dll), utilizzata per le finestre di dialogo comuni di Windows per la selezione dei file.
+
+8. `-o multiRuntimeMicrosoft`: Specifica il nome del file eseguibile di output.
+
+## Prerequisiti
+
+Prima di eseguire questo comando, assicurati di avere:
+
+1. GCC installato e configurato nel tuo PATH di sistema.
+2. OpenSSL installato nella directory `C:\OpenSSL`. Se la tua installazione di OpenSSL è in una directory diversa, modifica i percorsi `-I` e `-L` di conseguenza.
+3. Le librerie Winsock2 e Common Dialog disponibili nel tuo sistema (normalmente presenti in un'installazione Windows standard).
+
+## Esecuzione
+
+Dopo aver compilato con successo, puoi eseguire il programma usando:
+
+```
+.\multiRuntimeMicrosoft
+```
+
+## Nota
+
+Questo comando è specifico per l'ambiente Windows. Se stai utilizzando un sistema operativo diverso, potresti dover modificare il comando di compilazione di conseguenza.
