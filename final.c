@@ -23,6 +23,8 @@ char *base64(const char *input, int length);
 char *get_file_path();
 char *read_file(const char *filename, long *file_length);
 const char *get_mime_type(const char *filename);
+void pulisci_buffer();
+int valida_email(const char *email);
 
 int main()
 {
@@ -65,9 +67,7 @@ int main()
     server.sin_port = htons(port);
     printf("inserisci l'indirizzo del server smtp:");
     scanf("%s", smtp_server);
-    // clear buffer
-    while ((getchar()) != '\n')
-        ;
+    pulisci_buffer();
 
     struct hostent *host = gethostbyname(smtp_server);
     if (host == NULL)
@@ -186,15 +186,27 @@ int main()
     // Get credentials
     int conferma;
     // Get sender email
-    do
-    {
+    do {
         printf("Inserisci l'indirizzo email del mittente: ");
         fgets(FROM_EMAIL, sizeof(FROM_EMAIL), stdin);
-        FROM_EMAIL[strcspn(FROM_EMAIL, "\n")] = 0; // Rimuovi newline
+        FROM_EMAIL[strcspn(FROM_EMAIL, "\n")] = 0; // Rimuove newline
+
+        // Verifica se l'email è valida
+        if (!valida_email(FROM_EMAIL)) {
+            printf("L'indirizzo email non e' valido. Riprova.\n");
+            continue;
+        }
+
         printf("Hai inserito l'indirizzo email: %s\n", FROM_EMAIL);
-        printf("Sei sicuro? (1: Sì, 0: No): ");
-        scanf("%d", &conferma);
-        getchar(); // Consuma l'input newline dopo scanf
+        printf("Sei sicuro? (1: Si, 0: No): ");
+
+        // Controllo sull'input per evitare problemi con scanf
+        if (scanf("%d", &conferma) != 1) {
+            printf("Input non valido. Per favore inserisci 1 o 0.\n");
+            conferma = 0;
+        }
+        pulisci_buffer(); // Pulisci il buffer dopo scanf
+
     } while (conferma == 0); // Continua a chiedere finché l'utente non conferma
 
     // Encode email in base64 and send it
@@ -216,15 +228,21 @@ int main()
     }
     printf("Username response: %s\n", server_reply);
 
-    do
-    {
+    do {
         printf("Inserisci la password: ");
         fgets(PASSWORD, sizeof(PASSWORD), stdin);
         PASSWORD[strcspn(PASSWORD, "\n")] = 0; // Rimuovi newline
+
         printf("Hai inserito la password: %s\n", PASSWORD);
-        printf("Sei sicuro? (1: Sì, 0: No): ");
-        scanf("%d", &conferma);
-        getchar(); // Consuma l'input newline dopo scanf
+        printf("Sei sicuro? (1: Si, 0: No): ");
+
+        // Controllo sull'input per evitare problemi con scanf
+        if (scanf("%d", &conferma) != 1) {
+            printf("Input non valido. Per favore inserisci 1 o 0.\n");
+            conferma = 0;
+        }
+        pulisci_buffer(); // Pulisci il buffer dopo scanf
+
     } while (conferma == 0); // Continua a chiedere finché l'utente non conferma
 
     // Encode password in base64 and send it
@@ -282,6 +300,11 @@ int main()
         if (strcmp(to_emails[num_recipients], "fine") == 0)
         {
             break;
+        }
+        // Verifica se l'email è valida
+        if (!valida_email(to_emails[num_recipients])) {
+            printf("L'indirizzo email non e' valido. Riprova.\n");
+            continue; // Torna a chiedere l'inserimento dell'email senza incrementare il numero di destinatari
         }
         num_recipients++;
     }
@@ -945,3 +968,28 @@ const char *get_mime_type(const char *filename)
         return "application/octet-stream";
     }
 }
+// Funzione per verificare se l'email è valida
+int valida_email(const char *email) {
+    const char *chiocciola = strchr(email, '@');
+    const char *punto = strrchr(email, '.');
+
+    // Controllo che ci sia una chiocciola e un punto dopo la chiocciola
+    if (!chiocciola || !punto || chiocciola > punto) {
+        return 0;
+    }
+
+    // Controllo che i caratteri siano validi (solo lettere, numeri, chiocciola, punto, ecc.)
+    for (int i = 0; email[i] != '\0'; i++) {
+        if (!isalnum(email[i]) && email[i] != '@' && email[i] != '.' && email[i] != '_' && email[i] != '-') {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+// Funzione per pulire il buffer
+void pulisci_buffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
