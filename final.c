@@ -66,7 +66,7 @@ int main()
     scanf("%d", &port);
     server.sin_port = htons(port);
     printf("inserisci l'indirizzo del server smtp:");
-    scanf("%s", smtp_server);
+    fgets(smtp_server, BUFFER_SIZE, stdin);
     pulisci_buffer();
 
     struct hostent *host = gethostbyname(smtp_server);
@@ -272,7 +272,7 @@ int main()
     {
         printf("Password response: %s\n", server_reply);
     }
-
+    memset(PASSWORD, 0, sizeof(PASSWORD));  // Cancella la password dalla memoria dopo l'uso
     // Send MAIL FROM command
     char mail_from_command[BUFFER_SIZE];
     snprintf(mail_from_command, BUFFER_SIZE, "MAIL FROM:<%s>\r\n", FROM_EMAIL);
